@@ -20,7 +20,6 @@ void text_init(void)
 {
     TPL_OpenTPLFromMemory(&fontTPL, (void *)font_tpl, font_tpl_size);
     TPL_GetTexture(&fontTPL, fontTextureId, &fontTexture);
-    GX_SetNumTexGens(1);
     GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
     GX_LoadTexObj(&fontTexture, GX_TEXMAP0);
     GX_InvalidateTexAll();

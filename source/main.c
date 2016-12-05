@@ -65,6 +65,8 @@ static void setup_graphics(void)
     GX_SetCullMode(GX_CULL_NONE);  //Disable backface culling
     GX_CopyDisp(frameBuffers[frameBufferNum], GX_TRUE);  //Draw first frame
     GX_SetDispCopyGamma(GX_GM_1_0);
+    
+    GX_SetNumTexGens(2);
 }
 
 static void read_input(void)
@@ -94,9 +96,9 @@ int main(void)
         if (drawCallback != NULL)
             drawCallback();
         
-        GX_CopyDisp(frameBuffers[frameBufferNum], GX_TRUE);
-        GX_DrawDone();
         GX_Flush();
+        GX_DrawDone();
+        GX_CopyDisp(frameBuffers[frameBufferNum], GX_TRUE);
         VIDEO_SetNextFramebuffer(frameBuffers[frameBufferNum]);
         VIDEO_Flush();
         VIDEO_WaitVSync();

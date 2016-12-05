@@ -9,8 +9,9 @@
 #include "blocks_tpl.h"
 #include "blocks.h"
 
-extern void build_chunk_display_list(struct Chunk *chunk);
-extern void render_chunk_immediate(struct Chunk *chunk);
+extern void build_chunk_display_list_flat(struct Chunk *chunk);
+extern void render_chunk_displist_flat(struct Chunk *chunk);
+extern void render_chunk_immediate_flat(struct Chunk *chunk);
 
 struct Vertex
 {
@@ -46,10 +47,7 @@ void world_render_chunk(struct Chunk *chunk)
     GX_SetNumTevStages(1);
     GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
     GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD1, GX_TEXMAP1, GX_COLORNULL);
-    
-    //assert(chunk->dispList != NULL);
-    //GX_CallDispList(chunk->dispList, chunk->dispListSize);
-    render_chunk_immediate(chunk);
+    render_chunk_immediate_flat(chunk);
 }
 
 static void generate_land(struct Chunk *chunk)
@@ -92,7 +90,7 @@ static void generate_chunk(struct Chunk *chunk, int x, int z)
     chunk->z = z;
     generate_land(chunk);
     load_changes(chunk);
-    //build_chunk_display_list(chunk);
+    //build_chunk_display_list_flat(chunk);
 }
 
 void world_init(void)
@@ -101,7 +99,6 @@ void world_init(void)
     TPL_OpenTPLFromMemory(&blocksTPL, (void *)blocks_tpl, blocks_tpl_size);
     TPL_GetTexture(&blocksTPL, blocksTextureId, &blocksTexture);
     GX_InitTexObjFilterMode(&blocksTexture, GX_NEAR, GX_NEAR);
-    GX_SetNumTexGens(1);
     GX_SetTexCoordGen(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX1, GX_IDENTITY);
     GX_LoadTexObj(&blocksTexture, GX_TEXMAP1);
     GX_InvalidateTexAll();
