@@ -1,0 +1,5 @@
+# output files
+build/*
+*.o
+*.elf
+*.dol
