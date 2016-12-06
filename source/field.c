@@ -7,9 +7,6 @@
 #include "title_menu.h"
 #include "world.h"
 
-static void field_main(void);
-static void field_draw(void);
-
 struct Vec3f
 {
     float x;
@@ -21,31 +18,12 @@ static struct Vec3f playerPosition;
 static float yaw;  //positive value means looking right
 static float pitch;  //positive value means looking up
 
-static void render_scene(void)
-{
-    Mtx posMtx;
-    Mtx rotMtx;
-    Mtx yawRotMtx;
-    Mtx pitchRotMtx;
-    guVector axis;
-    
-    guMtxIdentity(posMtx);
-    guMtxApplyTrans(posMtx, posMtx, -playerPosition.x, -(playerPosition.y + 1.5), -playerPosition.z);
-    
-    axis = (guVector){0.0, 1.0, 0.0};
-    guMtxRotAxisDeg(yawRotMtx, &axis, yaw);
-    
-    axis = (guVector){-1.0, 0.0, 0.0};
-    guMtxRotAxisDeg(pitchRotMtx, &axis, pitch);
-    
-    guMtxConcat(pitchRotMtx, yawRotMtx, rotMtx);
-    guMtxConcat(rotMtx, posMtx, posMtx);
-    GX_LoadPosMtxImm(posMtx, GX_PNMTX0);
-    
-    //draw_axes();
-    
-    world_render_chunks_at(playerPosition.x, playerPosition.z);
-}
+static void field_main(void);
+static void field_draw(void);
+
+//==================================================
+// Pause Menu
+//==================================================
 
 static void pause_menu_main(void)
 {
@@ -74,6 +52,10 @@ static void open_pause_menu(void)
     set_main_callback(pause_menu_main);
     set_draw_callback(pause_menu_draw);
 }
+
+//==================================================
+// Overworld Functions
+//==================================================
 
 static void field_main(void)
 {
@@ -112,6 +94,30 @@ static void field_main(void)
     playerPosition.x += right * sin(DegToRad(yaw + 90.0));
     playerPosition.x -= forward * cos(DegToRad(yaw + 90.0));
     playerPosition.y += up;
+}
+
+static void render_scene(void)
+{
+    Mtx posMtx;
+    Mtx rotMtx;
+    Mtx yawRotMtx;
+    Mtx pitchRotMtx;
+    guVector axis;
+    
+    guMtxIdentity(posMtx);
+    guMtxApplyTrans(posMtx, posMtx, -playerPosition.x, -(playerPosition.y + 1.5), -playerPosition.z);
+    
+    axis = (guVector){0.0, 1.0, 0.0};
+    guMtxRotAxisDeg(yawRotMtx, &axis, yaw);
+    
+    axis = (guVector){-1.0, 0.0, 0.0};
+    guMtxRotAxisDeg(pitchRotMtx, &axis, pitch);
+    
+    guMtxConcat(pitchRotMtx, yawRotMtx, rotMtx);
+    guMtxConcat(rotMtx, posMtx, posMtx);
+    GX_LoadPosMtxImm(posMtx, GX_PNMTX0);
+    
+    world_render_chunks_at(playerPosition.x, playerPosition.z);
 }
 
 static void field_draw(void)

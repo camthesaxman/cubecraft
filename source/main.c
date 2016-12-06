@@ -67,7 +67,7 @@ static void setup_graphics(void)
     GX_CopyDisp(frameBuffers[frameBufferNum], GX_TRUE);  //Draw first frame
     GX_SetDispCopyGamma(GX_GM_1_0);
     
-    GX_SetNumTexGens(2);
+    GX_SetNumTexGens(1);
 }
 
 static void read_input(void)
