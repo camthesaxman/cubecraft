@@ -74,7 +74,7 @@ static void read_input(void)
 {
     PAD_ScanPads();
     gControllerPressedKeys = PAD_ButtonsDown(0);
-    gControllerHeldKeys = PAD_ButtonsDown(0);
+    gControllerHeldKeys = PAD_ButtonsHeld(0);
     gAnalogStickX = PAD_StickX(0);
     gAnalogStickY = PAD_StickY(0);
     gCStickX = PAD_SubStickX(0);

@@ -84,9 +84,9 @@ static void field_main(void)
     if (gControllerPressedKeys & PAD_BUTTON_START)
         open_pause_menu();
     if (gControllerHeldKeys & PAD_BUTTON_A)
-        up = 0.5;
+        up = 0.1;
     else if (gControllerHeldKeys & PAD_BUTTON_B)
-        up = -0.5;
+        up = -0.1;
     if (gCStickX > 10 || gCStickX < -10)
         yaw += (float)gCStickX / 100.0;
     if (gCStickY > 10 || gCStickY < -10)
