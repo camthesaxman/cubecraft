@@ -4,7 +4,7 @@
 #include "global.h"
 #include "world.h"
 
-void render_chunk_displist(struct Chunk *chunk)
+void render_chunk_display_list(struct Chunk *chunk)
 {
     assert(chunk->dispList != NULL);
     GX_ClearVtxDesc();

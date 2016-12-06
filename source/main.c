@@ -1,9 +1,11 @@
 #include <malloc.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "global.h"
 #include "text.h"
 #include "title_menu.h"
+#include "world.h"
 
 #define DEFAULT_FIFO_SIZE	(256*1024)
 
@@ -84,11 +86,12 @@ int main(void)
     PAD_Init();
     
     setup_graphics();
-    text_init();
+    world_load_textures();
+    text_load_textures();
     title_menu_init();
     
     while (1)
-    {       
+    {
         read_input();
         if (mainCallback != NULL)
             mainCallback();

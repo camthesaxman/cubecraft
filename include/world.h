@@ -28,10 +28,11 @@ struct Chunk
 };
 
 void world_init(void);
+void world_load_textures(void);
 void world_close(void);
-void world_render_chunk(struct Chunk *chunk);
 struct Chunk *world_get_chunk(int x, int z);
 struct Chunk *world_get_chunk_containing(float x, float z);
 int world_to_chunk_coord(float x);
+void world_render_chunks_at(float x, float z);
 
 #endif //GUARD_WORLD_H

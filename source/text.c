@@ -16,7 +16,7 @@
 static TPLFile fontTPL;
 static GXTexObj fontTexture;
 
-void text_init(void)
+void text_load_textures(void)
 {
     TPL_OpenTPLFromMemory(&fontTPL, (void *)font_tpl, font_tpl_size);
     TPL_GetTexture(&fontTPL, fontTextureId, &fontTexture);

@@ -10,7 +10,7 @@
 #include "blocks.h"
 
 extern void build_chunk_display_list(struct Chunk *chunk);
-extern void render_chunk_displist(struct Chunk *chunk);
+extern void render_chunk_display_list(struct Chunk *chunk);
 
 struct Vertex
 {
@@ -25,7 +25,7 @@ struct Face
     struct Vertex vertices[4];
 };
 
-#define CHUNK_RENDER_RADIUS 3
+#define CHUNK_RENDER_RADIUS 10
 #define CHUNK_TABLE_WIDTH 16  //must be a power of two and larger than the render radius
 #define CHUNK_TABLE_CAPACITY (CHUNK_TABLE_WIDTH * CHUNK_TABLE_WIDTH)
 
@@ -42,14 +42,6 @@ static int wrap_table_index(int index)
     assert(index >= 0);
     assert(index < CHUNK_TABLE_WIDTH);
     return index;
-}
-
-void world_render_chunk(struct Chunk *chunk)
-{
-    GX_SetNumTevStages(1);
-    GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
-    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD1, GX_TEXMAP1, GX_COLORNULL);
-    render_chunk_displist(chunk);
 }
 
 static u16 random(u16 a)
@@ -147,6 +139,10 @@ static void generate_chunk(struct Chunk *chunk, int x, int z)
 void world_init(void)
 {
     memset(chunkTable, 0, sizeof(chunkTable));
+}
+
+void world_load_textures(void)
+{
     TPL_OpenTPLFromMemory(&blocksTPL, (void *)blocks_tpl, blocks_tpl_size);
     TPL_GetTexture(&blocksTPL, blocksTextureId, &blocksTexture);
     GX_InitTexObjFilterMode(&blocksTexture, GX_NEAR, GX_NEAR);
@@ -204,6 +200,10 @@ void world_render_chunks_at(float x, float z)
     int chunkX = world_to_chunk_coord(x);
     int chunkZ = world_to_chunk_coord(z);
     
+    GX_SetNumTevStages(1);
+    GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD1, GX_TEXMAP1, GX_COLORNULL);
+    
     for (int i = -CHUNK_RENDER_RADIUS / 2; i <= CHUNK_RENDER_RADIUS / 2; i++)
     {
         for (int j = -CHUNK_RENDER_RADIUS / 2; j <= CHUNK_RENDER_RADIUS / 2; j++)
@@ -212,7 +212,7 @@ void world_render_chunks_at(float x, float z)
             
             if (chunk->dispList == NULL)
                 build_chunk_display_list(chunk);
-            world_render_chunk(chunk);
+            render_chunk_display_list(chunk);
         }
     }
 }
