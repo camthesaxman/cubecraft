@@ -7,8 +7,6 @@
 #include "title_menu.h"
 #include "world.h"
 
-#define CHUNK_RENDER_RADIUS 3
-
 static void field_main(void);
 static void field_draw(void);
 
@@ -102,9 +100,6 @@ static void draw_axes(void)
 
 static void render_scene(void)
 {
-    int x = world_to_chunk_coord(playerPosition.x);
-    int z = world_to_chunk_coord(playerPosition.z);
-    
     Mtx posMtx;
     Mtx rotMtx;
     Mtx yawRotMtx;
@@ -126,11 +121,7 @@ static void render_scene(void)
     
     //draw_axes();
     
-    for (int i = -CHUNK_RENDER_RADIUS / 2; i <= CHUNK_RENDER_RADIUS / 2; i++)
-    {
-        for (int j = -CHUNK_RENDER_RADIUS / 2; j <= CHUNK_RENDER_RADIUS / 2; j++)
-            world_render_chunk(world_get_chunk(x + i, z + j));
-    }
+    world_render_chunks_at(playerPosition.x, playerPosition.z);
 }
 
 static void pause_menu_main(void)
@@ -218,6 +209,7 @@ void field_init(void)
     struct Chunk *chunk;
     int x, y, z;
     
+    world_init();
     playerPosition.x = 0.0;
     playerPosition.z = 0.0;
     yaw = 0.0;
@@ -236,7 +228,6 @@ void field_init(void)
     }
     playerPosition.y = y;
     
-    world_init();
     set_main_callback(field_main);
     set_draw_callback(field_draw);
 }

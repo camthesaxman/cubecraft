@@ -4,45 +4,7 @@
 #include "global.h"
 #include "world.h"
 
-void build_chunk_display_list_flat(struct Chunk *chunk)
-{
-    int blockFace = 4;
-    float texLeft = (float)blockFace / 8.0;
-    float texRight = (float)(blockFace + 1) / 8.0;
-    int x, z;
-    const size_t listSize = 4 * 1024; //TODO: calculate actual size needed
-    
-    chunk->dispList = memalign(32, listSize);
-    memset(chunk->dispList, 0, listSize);
-    DCInvalidateRange(chunk->dispList, listSize);
-    
-    GX_BeginDispList(chunk->dispList, listSize);
-    
-    GX_Begin(GX_QUADS, GX_VTXFMT1, 4 * CHUNK_WIDTH * CHUNK_WIDTH);
-    for (int i = 0; i < CHUNK_WIDTH; i++)
-    {
-        x = chunk->x * CHUNK_WIDTH + i;
-        for (int j = 0; j < CHUNK_WIDTH; j++)
-        {
-            z = chunk->z * CHUNK_WIDTH + j;
-            
-            GX_Position3s16(x, 0, z);
-            GX_TexCoord2f32(texLeft, 0.0);
-            GX_Position3s16(x + 1, 0, z);
-            GX_TexCoord2f32(texRight, 0.0);
-            GX_Position3s16(x + 1, 0, z + 1);
-            GX_TexCoord2f32(texRight, 1.0);
-            GX_Position3s16(x, 0, z + 1);
-            GX_TexCoord2f32(texLeft, 1.0);
-        }
-    }
-    GX_End();
-    
-    chunk->dispListSize = GX_EndDispList();
-    assert(chunk->dispListSize != 0);
-}
-
-void render_chunk_displist_flat(struct Chunk *chunk)
+void render_chunk_displist(struct Chunk *chunk)
 {
     assert(chunk->dispList != NULL);
     GX_ClearVtxDesc();
@@ -50,7 +12,6 @@ void render_chunk_displist_flat(struct Chunk *chunk)
     GX_SetVtxDesc(GX_VA_TEX1, GX_DIRECT);
     GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
     GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_TEX1, GX_TEX_ST, GX_F32, 0);
-    printf("display list size = %u\n", chunk->dispListSize);
     GX_CallDispList(chunk->dispList, chunk->dispListSize);
 }
 
@@ -189,6 +150,8 @@ static void build_exposed_faces_list(struct Chunk *chunk)
     facesList = NULL;
     facesListCount = 0;
     facesListCapacity = 0;
+    struct Chunk *prevChunkX = world_get_chunk(chunk->x - 1, chunk->z);
+    struct Chunk *prevChunkZ = world_get_chunk(chunk->x, chunk->z - 1);
     
     for (int x = 0; x < CHUNK_WIDTH; x++)
     {
@@ -196,35 +159,41 @@ static void build_exposed_faces_list(struct Chunk *chunk)
         {
             for (int z = 0; z < CHUNK_WIDTH; z++)
             {
-                if (BLOCK_IS_SOLID(chunk->blocks[x][y][z]))
+                int currBlock = chunk->blocks[x][y][z];
+                int prevBlockX = (x == 0) ? prevChunkX->blocks[CHUNK_WIDTH - 1][y][z] : chunk->blocks[x - 1][y][z];
+                int prevBlockZ = (z == 0) ? prevChunkZ->blocks[x][y][CHUNK_WIDTH - 1] : chunk->blocks[x][y][z - 1];
+                
+                if (BLOCK_IS_SOLID(currBlock))
                 {
-                    int block = chunk->blocks[x][y][z];
-                    
-                    if (x > 0 && !BLOCK_IS_SOLID(chunk->blocks[x - 1][y][z]))
-                        add_face(x, y, z, DIR_X_BACK, block);
+                    if (!BLOCK_IS_SOLID(prevBlockX))
+                        add_face(x, y, z, DIR_X_BACK, currBlock);
                     if (y > 0 && !BLOCK_IS_SOLID(chunk->blocks[x][y - 1][z]))
-                        add_face(x, y, z, DIR_Y_BACK, block);
-                    if (z > 0 && !BLOCK_IS_SOLID(chunk->blocks[x][y][z - 1]))
-                        add_face(x, y, z, DIR_Z_BACK, block);
+                        add_face(x, y, z, DIR_Y_BACK, currBlock);
+                    if (!BLOCK_IS_SOLID(prevBlockZ))
+                        add_face(x, y, z, DIR_Z_BACK, currBlock);
                 }
-                else  //block is not solid
+                else
                 {
-                    if (x > 0 && BLOCK_IS_SOLID(chunk->blocks[x - 1][y][z]))
-                        add_face(x, y, z, DIR_X_FRONT, chunk->blocks[x - 1][y][z]);
+                    if (BLOCK_IS_SOLID(prevBlockX))
+                        add_face(x, y, z, DIR_X_FRONT, prevBlockX);
                     if (y > 0 && BLOCK_IS_SOLID(chunk->blocks[x][y - 1][z]))
                         add_face(x, y, z, DIR_Y_FRONT, chunk->blocks[x][y - 1][z]);
-                    if (z > 0 && BLOCK_IS_SOLID(chunk->blocks[x][y][z - 1]))
-                        add_face(x, y, z, DIR_Z_FRONT, chunk->blocks[x][y][z - 1]);
+                    if (BLOCK_IS_SOLID(prevBlockZ))
+                        add_face(x, y, z, DIR_Z_FRONT, prevBlockZ);
                 }
             }
         }
     }
 }
 
-//TODO: Get display lists working properly. Doing this shit every frame is O(MG) SLOW!!!
-//TODO: Get indexed texture coordinates working
-void render_chunk_immediate(struct Chunk *chunk)
+static inline int round_up(int number, int multiple)
 {
+    return ((number + multiple - 1) / multiple) * multiple;
+}
+
+void build_chunk_display_list(struct Chunk *chunk)
+{
+    size_t listSize;
     int x = chunk->x * CHUNK_WIDTH;
     int z = chunk->z * CHUNK_WIDTH;
     int blockFace = 0;
@@ -239,13 +208,12 @@ void render_chunk_immediate(struct Chunk *chunk)
     
     build_exposed_faces_list(chunk);
     
-    GX_ClearVtxDesc();
-    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
-    //GX_SetVtxDesc(GX_VA_TEX1, GX_INDEX8);
-    GX_SetVtxDesc(GX_VA_TEX1, GX_DIRECT);
-    GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
-    GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_TEX1, GX_TEX_ST, GX_F32, 0);
-    //GX_SetArray(GX_VA_TEX1, texCoords, 2 * sizeof(f32));    
+    listSize = 3 + facesListCount * 4 * (3 * sizeof(s16) + 2 * sizeof(f32)) + 64;
+    listSize = round_up(listSize, 32);
+    chunk->dispList = memalign(32, listSize);
+    DCInvalidateRange(chunk->dispList, listSize);
+    
+    GX_BeginDispList(chunk->dispList, listSize); 
     
     GX_Begin(GX_QUADS, GX_VTXFMT1, 4 * facesListCount);
     for (int i = 0; i < facesListCount; i++)
@@ -257,45 +225,14 @@ void render_chunk_immediate(struct Chunk *chunk)
             struct Vertex *vertex = &face->vertexes[j];
             
             GX_Position3s16(x + vertex->x, vertex->y, z + vertex->z);
-            //GX_TexCoord1x8(j);
             GX_TexCoord2f32(texCoords[j * 2] + (float)face->tile / 8.0, texCoords[j * 2 + 1]);
         }
     }
     GX_End();
     
+    chunk->dispListSize = GX_EndDispList();
+    printf("size of display list: estimated %i, actual %i bytes", listSize, chunk->dispListSize);
+    assert(chunk->dispListSize != 0);
+    
     free(facesList);
-}
-
-void render_chunk_immediate_flat(struct Chunk *chunk)
-{
-    int blockFace = 0;
-    float texLeft = (float)blockFace / 8.0;
-    float texRight = (float)(blockFace + 1) / 8.0;
-    int x, z;
-    
-    GX_ClearVtxDesc();
-    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GX_SetVtxDesc(GX_VA_TEX1, GX_DIRECT);
-    GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
-    GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_TEX1, GX_TEX_ST, GX_F32, 0);
-    
-    GX_Begin(GX_QUADS, GX_VTXFMT1, 4 * CHUNK_WIDTH * CHUNK_WIDTH);
-    for (int i = 0; i < CHUNK_WIDTH; i++)
-    {
-        x = chunk->x * CHUNK_WIDTH + i;
-        for (int j = 0; j < CHUNK_WIDTH; j++)
-        {
-            z = chunk->z * CHUNK_WIDTH + j;
-            
-            GX_Position3s16(x, 0, z);
-            GX_TexCoord2f32(texLeft, 0.0);
-            GX_Position3s16(x + 1, 0, z);
-            GX_TexCoord2f32(texRight, 0.0);
-            GX_Position3s16(x + 1, 0, z + 1);
-            GX_TexCoord2f32(texRight, 1.0);
-            GX_Position3s16(x, 0, z + 1);
-            GX_TexCoord2f32(texLeft, 1.0);
-        }
-    }
-    GX_End();
 }
