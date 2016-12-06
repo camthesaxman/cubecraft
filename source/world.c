@@ -35,6 +35,8 @@ static struct Chunk chunkTable[CHUNK_TABLE_WIDTH][CHUNK_TABLE_WIDTH];
 static TPLFile blocksTPL;
 static GXTexObj blocksTexture;
 
+static u16 worldSeed = 54321;
+
 static int wrap_table_index(int index)
 {
     index = ((unsigned int)index % CHUNK_TABLE_WIDTH);
@@ -51,9 +53,9 @@ void world_render_chunk(struct Chunk *chunk)
     render_chunk_immediate(chunk);
 }
 
-static u16 random(u16 seed)
+static u16 random(u16 a)
 {
-    unsigned int val = seed;
+    unsigned int val = a ^ worldSeed;
     val = val * 1103515245 + 12345;
     return val;
 }
@@ -104,7 +106,16 @@ static void generate_land(struct Chunk *chunk)
             int landHeight = 20.0 + 16.0 * noisemap[x][z];
             
             for (y = 0; y < landHeight; y++)
-                chunk->blocks[x][y][z] = BLOCK_STONE;
+            {
+                if (y < 22)
+                    chunk->blocks[x][y][z] = BLOCK_STONE;
+                else if (y < 25)
+                    chunk->blocks[x][y][z] = BLOCK_SAND;
+                else if (y == landHeight - 1)
+                    chunk->blocks[x][y][z] = BLOCK_DIRTGRASS;
+                else
+                    chunk->blocks[x][y][z] = BLOCK_DIRT;
+            }
             for (; y < CHUNK_HEIGHT; y++)
                 chunk->blocks[x][y][z] = BLOCK_AIR;
         }

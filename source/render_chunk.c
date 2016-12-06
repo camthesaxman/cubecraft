@@ -54,6 +54,24 @@ void render_chunk_displist_flat(struct Chunk *chunk)
     GX_CallDispList(chunk->dispList, chunk->dispListSize);
 }
 
+enum
+{
+    STONE_FACE,
+    SAND_FACE,
+    DIRT_FACE,
+    DIRTGRASS_FACE,
+    GRASS_FACE,
+    WOOD_FACE,
+};
+
+const u8 blockFaceTiles[][6] = {
+	[BLOCK_STONE] = {STONE_FACE, STONE_FACE, STONE_FACE, STONE_FACE, STONE_FACE, STONE_FACE},
+	[BLOCK_SAND] = {SAND_FACE, SAND_FACE, SAND_FACE, SAND_FACE, SAND_FACE, SAND_FACE},
+	[BLOCK_DIRT] = {DIRT_FACE, DIRT_FACE, DIRT_FACE, DIRT_FACE, DIRT_FACE, DIRT_FACE},
+	[BLOCK_DIRTGRASS] = {DIRTGRASS_FACE, DIRTGRASS_FACE, GRASS_FACE, DIRT_FACE, DIRTGRASS_FACE, DIRTGRASS_FACE},
+	[BLOCK_WOOD] = {WOOD_FACE, WOOD_FACE, WOOD_FACE, WOOD_FACE, WOOD_FACE, WOOD_FACE}
+};
+
 struct Vertex
 {
     s16 x, y, z;
@@ -61,6 +79,7 @@ struct Vertex
 
 struct Face
 {
+    int tile;
     struct Vertex vertexes[4];
 };
 
@@ -103,24 +122,24 @@ enum
  *   V
  */
 
-static void add_face(int x, int y, int z, int direction)
+static void add_face(int x, int y, int z, int direction, int block)
 {
     struct Face face;
     
-    //puts("add_face");
+    face.tile = blockFaceTiles[block][direction];
     switch (direction)
     {
         case DIR_X_FRONT:  //drawn clockwise looking x-
-            face.vertexes[0] = (struct Vertex){0, 0, 0};
-            face.vertexes[1] = (struct Vertex){0, 0, 1};
-            face.vertexes[2] = (struct Vertex){0, 1, 1};
-            face.vertexes[3] = (struct Vertex){0, 1, 0};
+            face.vertexes[0] = (struct Vertex){0, 1, 1};
+            face.vertexes[1] = (struct Vertex){0, 1, 0};
+            face.vertexes[2] = (struct Vertex){0, 0, 0};
+            face.vertexes[3] = (struct Vertex){0, 0, 1};
             break;
         case DIR_X_BACK:  //drawn clockwise looking x+
-            face.vertexes[0] = (struct Vertex){0, 0, 0};
-            face.vertexes[1] = (struct Vertex){0, 1, 0};
-            face.vertexes[2] = (struct Vertex){0, 1, 1};
-            face.vertexes[3] = (struct Vertex){0, 0, 1};
+            face.vertexes[0] = (struct Vertex){0, 1, 0};
+            face.vertexes[1] = (struct Vertex){0, 1, 1};
+            face.vertexes[2] = (struct Vertex){0, 0, 1};
+            face.vertexes[3] = (struct Vertex){0, 0, 0};
             break;
         case DIR_Y_FRONT:  //drawn clockwise looking y-
             face.vertexes[0] = (struct Vertex){0, 0, 0};
@@ -135,16 +154,16 @@ static void add_face(int x, int y, int z, int direction)
             face.vertexes[3] = (struct Vertex){1, 0, 0};
             break;
         case DIR_Z_FRONT: //drawn clockwise looking z-
-            face.vertexes[0] = (struct Vertex){0, 0, 0};
-            face.vertexes[1] = (struct Vertex){0, 1, 0};
-            face.vertexes[2] = (struct Vertex){1, 1, 0};
-            face.vertexes[3] = (struct Vertex){1, 0, 0};
+            face.vertexes[0] = (struct Vertex){0, 1, 0};
+            face.vertexes[1] = (struct Vertex){1, 1, 0};
+            face.vertexes[2] = (struct Vertex){1, 0, 0};
+            face.vertexes[3] = (struct Vertex){0, 0, 0};
             break;
         case DIR_Z_BACK:  //drawn clockwise looking z+
-            face.vertexes[0] = (struct Vertex){0, 0, 0};
-            face.vertexes[1] = (struct Vertex){1, 0, 0};
-            face.vertexes[2] = (struct Vertex){1, 1, 0};
-            face.vertexes[3] = (struct Vertex){0, 1, 0};
+            face.vertexes[0] = (struct Vertex){1, 1, 0};
+            face.vertexes[1] = (struct Vertex){0, 1, 0};
+            face.vertexes[2] = (struct Vertex){0, 0, 0};
+            face.vertexes[3] = (struct Vertex){1, 0, 0};
             break;
         default:
             assert(false);  //bad direction parameter
@@ -179,21 +198,23 @@ static void build_exposed_faces_list(struct Chunk *chunk)
             {
                 if (BLOCK_IS_SOLID(chunk->blocks[x][y][z]))
                 {
+                    int block = chunk->blocks[x][y][z];
+                    
                     if (x > 0 && !BLOCK_IS_SOLID(chunk->blocks[x - 1][y][z]))
-                        add_face(x, y, z, DIR_X_BACK);
+                        add_face(x, y, z, DIR_X_BACK, block);
                     if (y > 0 && !BLOCK_IS_SOLID(chunk->blocks[x][y - 1][z]))
-                        add_face(x, y, z, DIR_Y_BACK);
+                        add_face(x, y, z, DIR_Y_BACK, block);
                     if (z > 0 && !BLOCK_IS_SOLID(chunk->blocks[x][y][z - 1]))
-                        add_face(x, y, z, DIR_Z_BACK);
+                        add_face(x, y, z, DIR_Z_BACK, block);
                 }
                 else  //block is not solid
                 {
                     if (x > 0 && BLOCK_IS_SOLID(chunk->blocks[x - 1][y][z]))
-                        add_face(x, y, z, DIR_X_FRONT);
+                        add_face(x, y, z, DIR_X_FRONT, chunk->blocks[x - 1][y][z]);
                     if (y > 0 && BLOCK_IS_SOLID(chunk->blocks[x][y - 1][z]))
-                        add_face(x, y, z, DIR_Y_FRONT);
+                        add_face(x, y, z, DIR_Y_FRONT, chunk->blocks[x][y - 1][z]);
                     if (z > 0 && BLOCK_IS_SOLID(chunk->blocks[x][y][z - 1]))
-                        add_face(x, y, z, DIR_Z_FRONT);
+                        add_face(x, y, z, DIR_Z_FRONT, chunk->blocks[x][y][z - 1]);
                 }
             }
         }
@@ -211,9 +232,9 @@ void render_chunk_immediate(struct Chunk *chunk)
     float texRight = (float)(blockFace + 1) / 8.0;
     f32 texCoords[] ATTRIBUTE_ALIGN(32) = {
         texLeft,  0.0,
-        texLeft,  1.0,
-        texRight, 1.0,
         texRight, 0.0,
+        texRight, 1.0,
+        texLeft, 1.0,
     };
     
     build_exposed_faces_list(chunk);
@@ -229,13 +250,15 @@ void render_chunk_immediate(struct Chunk *chunk)
     GX_Begin(GX_QUADS, GX_VTXFMT1, 4 * facesListCount);
     for (int i = 0; i < facesListCount; i++)
     {
+        struct Face *face = &facesList[i];
+        
         for (int j = 0; j < 4; j++)
         {
-            struct Vertex *vertex = &facesList[i].vertexes[j];
+            struct Vertex *vertex = &face->vertexes[j];
             
             GX_Position3s16(x + vertex->x, vertex->y, z + vertex->z);
             //GX_TexCoord1x8(j);
-            GX_TexCoord2f32(texCoords[j * 2], texCoords[j * 2 + 1]);
+            GX_TexCoord2f32(texCoords[j * 2] + (float)face->tile / 8.0, texCoords[j * 2 + 1]);
         }
     }
     GX_End();
