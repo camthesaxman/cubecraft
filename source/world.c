@@ -101,7 +101,7 @@ static void generate_land(struct Chunk *chunk)
     {
         for (z = 0; z < CHUNK_WIDTH; z++)
         {
-            int landHeight = 10.0 + 5.0 * noisemap[x][z];
+            int landHeight = 20.0 + 16.0 * noisemap[x][z];
             
             for (y = 0; y < landHeight; y++)
                 chunk->blocks[x][y][z] = BLOCK_STONE;

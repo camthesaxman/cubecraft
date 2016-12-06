@@ -70,9 +70,12 @@ int facesListCapacity;
 
 enum
 {
-    DIR_X,
-    DIR_Y,
-    DIR_Z,
+    DIR_X_FRONT,
+    DIR_X_BACK,
+    DIR_Y_FRONT,
+    DIR_Y_BACK,
+    DIR_Z_FRONT,
+    DIR_Z_BACK,
 };
 
 /* Block faces
@@ -107,26 +110,44 @@ static void add_face(int x, int y, int z, int direction)
     //puts("add_face");
     switch (direction)
     {
-        case DIR_X:
+        case DIR_X_FRONT:  //drawn clockwise looking x-
+            face.vertexes[0] = (struct Vertex){0, 0, 0};
+            face.vertexes[1] = (struct Vertex){0, 0, 1};
+            face.vertexes[2] = (struct Vertex){0, 1, 1};
+            face.vertexes[3] = (struct Vertex){0, 1, 0};
+            break;
+        case DIR_X_BACK:  //drawn clockwise looking x+
             face.vertexes[0] = (struct Vertex){0, 0, 0};
             face.vertexes[1] = (struct Vertex){0, 1, 0};
             face.vertexes[2] = (struct Vertex){0, 1, 1};
             face.vertexes[3] = (struct Vertex){0, 0, 1};
             break;
-        case DIR_Y:
+        case DIR_Y_FRONT:  //drawn clockwise looking y-
+            face.vertexes[0] = (struct Vertex){0, 0, 0};
+            face.vertexes[1] = (struct Vertex){1, 0, 0};
+            face.vertexes[2] = (struct Vertex){1, 0, 1};
+            face.vertexes[3] = (struct Vertex){0, 0, 1};
+            break;
+        case DIR_Y_BACK:  //drawn clockwise looking y+
             face.vertexes[0] = (struct Vertex){0, 0, 0};
             face.vertexes[1] = (struct Vertex){0, 0, 1};
             face.vertexes[2] = (struct Vertex){1, 0, 1};
             face.vertexes[3] = (struct Vertex){1, 0, 0};
             break;
-        case DIR_Z:
+        case DIR_Z_FRONT: //drawn clockwise looking z-
+            face.vertexes[0] = (struct Vertex){0, 0, 0};
+            face.vertexes[1] = (struct Vertex){0, 1, 0};
+            face.vertexes[2] = (struct Vertex){1, 1, 0};
+            face.vertexes[3] = (struct Vertex){1, 0, 0};
+            break;
+        case DIR_Z_BACK:  //drawn clockwise looking z+
             face.vertexes[0] = (struct Vertex){0, 0, 0};
             face.vertexes[1] = (struct Vertex){1, 0, 0};
             face.vertexes[2] = (struct Vertex){1, 1, 0};
             face.vertexes[3] = (struct Vertex){0, 1, 0};
             break;
         default:
-            assert(false);
+            assert(false);  //bad direction parameter
     }
     for (int i = 0; i < 4; i++)
     {
@@ -159,20 +180,20 @@ static void build_exposed_faces_list(struct Chunk *chunk)
                 if (BLOCK_IS_SOLID(chunk->blocks[x][y][z]))
                 {
                     if (x > 0 && !BLOCK_IS_SOLID(chunk->blocks[x - 1][y][z]))
-                        add_face(x, y, z, DIR_X);
+                        add_face(x, y, z, DIR_X_BACK);
                     if (y > 0 && !BLOCK_IS_SOLID(chunk->blocks[x][y - 1][z]))
-                        add_face(x, y, z, DIR_Y);
+                        add_face(x, y, z, DIR_Y_BACK);
                     if (z > 0 && !BLOCK_IS_SOLID(chunk->blocks[x][y][z - 1]))
-                        add_face(x, y, z, DIR_Z);
+                        add_face(x, y, z, DIR_Z_BACK);
                 }
                 else  //block is not solid
                 {
                     if (x > 0 && BLOCK_IS_SOLID(chunk->blocks[x - 1][y][z]))
-                        add_face(x, y, z, DIR_X);
+                        add_face(x, y, z, DIR_X_FRONT);
                     if (y > 0 && BLOCK_IS_SOLID(chunk->blocks[x][y - 1][z]))
-                        add_face(x, y, z, DIR_Y);
+                        add_face(x, y, z, DIR_Y_FRONT);
                     if (z > 0 && BLOCK_IS_SOLID(chunk->blocks[x][y][z - 1]))
-                        add_face(x, y, z, DIR_Z);
+                        add_face(x, y, z, DIR_Z_FRONT);
                 }
             }
         }
@@ -185,7 +206,7 @@ void render_chunk_immediate(struct Chunk *chunk)
 {
     int x = chunk->x * CHUNK_WIDTH;
     int z = chunk->z * CHUNK_WIDTH;
-    int blockFace = 4;
+    int blockFace = 0;
     float texLeft = (float)blockFace / 8.0;
     float texRight = (float)(blockFace + 1) / 8.0;
     f32 texCoords[] ATTRIBUTE_ALIGN(32) = {

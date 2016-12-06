@@ -62,7 +62,6 @@ static void setup_graphics(void)
     else
         GX_SetFieldMode(videoMode->field_rendering, GX_DISABLE);
     
-    GX_SetCullMode(GX_CULL_NONE);  //Disable backface culling
     GX_CopyDisp(frameBuffers[frameBufferNum], GX_TRUE);  //Draw first frame
     GX_SetDispCopyGamma(GX_GM_1_0);
     
