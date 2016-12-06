@@ -215,11 +215,26 @@ static void field_draw(void)
 
 void field_init(void)
 {
+    struct Chunk *chunk;
+    int x, y, z;
+    
     playerPosition.x = 0.0;
-    playerPosition.y = 0.0;
     playerPosition.z = 0.0;
     yaw = 0.0;
     pitch = 0.0;
+    chunk = world_get_chunk_containing(playerPosition.x, playerPosition.z);
+    x = (unsigned int)floor(playerPosition.x) % CHUNK_WIDTH;
+    z = (unsigned int)floor(playerPosition.z) % CHUNK_WIDTH;
+    
+    for (y = CHUNK_HEIGHT -1; y >= 0; y--)
+    {
+        if (BLOCK_IS_SOLID(chunk->blocks[x][y][z]))
+        {
+            y++;
+            break;
+        }
+    }
+    playerPosition.y = y;
     
     world_init();
     set_main_callback(field_main);

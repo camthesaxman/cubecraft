@@ -11,6 +11,7 @@
 
 extern void build_chunk_display_list_flat(struct Chunk *chunk);
 extern void render_chunk_displist_flat(struct Chunk *chunk);
+extern void render_chunk_immediate(struct Chunk *chunk);
 extern void render_chunk_immediate_flat(struct Chunk *chunk);
 
 struct Vertex
@@ -47,19 +48,60 @@ void world_render_chunk(struct Chunk *chunk)
     GX_SetNumTevStages(1);
     GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
     GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD1, GX_TEXMAP1, GX_COLORNULL);
-    render_chunk_immediate_flat(chunk);
+    render_chunk_immediate(chunk);
 }
+
+static u16 random(u16 seed)
+{
+    unsigned int val = seed;
+    val = val * 1103515245 + 12345;
+    return val;
+}
+
+//Returns a random float between 0 and 1
+static float rand_hash(int a, int b)
+{
+    u16 hash = random(a) ^ random(b);
+    
+    return (float)hash / 65535.0;
+}
+
+static float lerp(float a, float b, float x)
+{
+    return a + x * (b - a);
+}
+
+#define WAVELENGTH 32
 
 static void generate_land(struct Chunk *chunk)
 {
-    int x, y, z;
+    float noisemap[CHUNK_WIDTH][CHUNK_WIDTH];
+    int x = chunk->x * CHUNK_WIDTH;
+    int z = chunk->z * CHUNK_WIDTH;
+    int y;
+    
+    for (int i = 0; i < CHUNK_WIDTH; i++)
+    {
+        int x1 = floor((float)(x + i) / WAVELENGTH) *WAVELENGTH;
+        int x2 = x1 + WAVELENGTH;
+        float xBlend = (float)(x + i - x1) / (float)(WAVELENGTH);
+        for (int j = 0; j < CHUNK_WIDTH; j++)
+        {
+            int z1 = floor((float)(z + j) / WAVELENGTH) * WAVELENGTH;
+            int z2 = z1 + WAVELENGTH;
+            float zBlend = (float)(z + j - z1) / (float)(WAVELENGTH);
+            float a = lerp(rand_hash(x1, z1), rand_hash(x2, z1), xBlend);
+            float b = lerp(rand_hash(x1, z2), rand_hash(x2, z2), xBlend);
+            noisemap[i][j] = lerp(a, b, zBlend);
+        }
+    }
     
     //TODO: generate heightmap
     for (x = 0; x < CHUNK_WIDTH; x++)
     {
         for (z = 0; z < CHUNK_WIDTH; z++)
         {
-            int landHeight = 5;
+            int landHeight = 10.0 + 5.0 * noisemap[x][z];
             
             for (y = 0; y < landHeight; y++)
                 chunk->blocks[x][y][z] = BLOCK_STONE;

@@ -15,6 +15,8 @@ enum
 	BLOCK_WOOD
 };
 
+#define BLOCK_IS_SOLID(b)   ((b) != BLOCK_AIR && (b) != BLOCK_WATER)
+
 struct Chunk
 {
     bool active;
