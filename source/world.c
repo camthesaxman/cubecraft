@@ -213,6 +213,22 @@ int world_to_block_coord(float x)
     return ret;
 }
 
+int world_get_block_at(float x, float y, float z)
+{
+    struct Chunk *chunk = world_get_chunk_containing(x, z);
+    int blockX = world_to_block_coord(x);
+    int blockY = floorf(y);
+    int blockZ = world_to_block_coord(z);
+    
+    assert(blockX >= 0);
+    assert(blockX < CHUNK_WIDTH);
+    assert(blockY >= 0);
+    assert(blockY < CHUNK_HEIGHT);
+    assert(blockZ >= 0);
+    assert(blockZ < CHUNK_WIDTH);
+    return chunk->blocks[blockX][blockY][blockZ];
+}
+
 //==================================================
 // Rendering
 //==================================================

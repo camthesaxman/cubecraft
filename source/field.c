@@ -7,7 +7,13 @@
 #include "title_menu.h"
 #include "world.h"
 
+//For collision detection
+//The player's bounding box is a prism that encompasses everything within 
+//playerPosition.x - PLAYER_RADIUS to playerPosition.x + PLAYER_RADIUS,
+//playerPosition.z - PLAYER_RADIUS to playerPosition.z + PLAYER_RADIUS, and
+//playerPosition.y to playerPosition.y + PLAYER_HEIGHT
 #define PLAYER_RADIUS 0.5
+#define PLAYER_HEIGHT 1.5
 
 enum
 {
@@ -71,126 +77,59 @@ static void open_pause_menu(void)
 //TODO: This collision check can be improved.
 static void apply_motion_vector(struct Vec3f motion)
 {
-    struct Chunk *chunk;
-    struct Chunk *neighborChunk;
-    struct Vec3f newPosition;
-    float fracX, fracZ;
-    int intX, intY, intZ;
-    bool hitX = false;
-    bool hitZ = false;
+    //Clamp fall speed to avoid tunneling problem on large falls. This should be very rare.
+    if (motion.y < -1.0)
+        motion.y = -1.0;
     
-    //We're not yet prepared to handle these cases
-    assert(fabsf(motion.x) <= 1.0);
-    assert(fabsf(motion.y) <= 1.0);
-    assert(fabsf(motion.z) <= 1.0);
-    newPosition.x = playerPosition.x + motion.x;
-    newPosition.y = playerPosition.y + motion.y;
-    newPosition.z = playerPosition.z + motion.z;
-    chunk = world_get_chunk_containing(newPosition.x, newPosition.z);
-    
-    intX = world_to_block_coord(newPosition.x);
-    intY = floorf(newPosition.y);
-    intZ = world_to_block_coord(newPosition.z);
-    fracX = newPosition.x - floorf(newPosition.x);
-    fracZ = newPosition.z - floorf(newPosition.z);
-    
-    hitX = BLOCK_IS_SOLID(chunk->blocks[intX][intY][intZ]);
-    if (!hitX)
+    if (motion.x > 0.0)
     {
-        if (fracX < PLAYER_RADIUS)
-        {
-            //Check x - 1
-            if (intX > 0)
-            {
-                hitX = BLOCK_IS_SOLID(chunk->blocks[intX - 1][intY][intZ]);
-            }
-            else
-            {
-                neighborChunk = world_get_chunk(chunk->x - 1, chunk->z);
-                hitX = BLOCK_IS_SOLID(neighborChunk->blocks[CHUNK_WIDTH - 1][intY][intZ]);
-            }
-        }
-        else if (fracX > 1.0 - PLAYER_RADIUS)
-        {
-            //Check x + 1
-            if (intX < CHUNK_WIDTH - 1)
-            {
-                hitX = BLOCK_IS_SOLID(chunk->blocks[intX + 1][intY][intZ]);
-            }
-            else
-            {
-                neighborChunk = world_get_chunk(chunk->x + 1, chunk->z);
-                hitX = BLOCK_IS_SOLID(neighborChunk->blocks[0][intY][intZ]);
-            }
-        }
+        if (BLOCK_IS_SOLID(world_get_block_at(playerPosition.x + motion.x + PLAYER_RADIUS, playerPosition.y, playerPosition.z)))
+            motion.x = 0;
     }
-    //clamp x position
-    if (hitX)
+    else if (motion.x < 0.0)
     {
-        //text_draw_string(0, 0, false, "X Collision");
-        //TODO: find maximum X position
-        newPosition.x = playerPosition.x;
-        intX = world_to_block_coord(newPosition.x);
+        if (BLOCK_IS_SOLID(world_get_block_at(playerPosition.x + motion.x - PLAYER_RADIUS, playerPosition.y, playerPosition.z)))
+            motion.x = 0;
     }
     
-    hitZ = BLOCK_IS_SOLID(chunk->blocks[intX][intY][intZ]);
-    if (!hitZ)
+    if (motion.y > 0.0)
     {
-        if (fracZ < PLAYER_RADIUS)
-        {
-            //Check z - 1
-            if (intZ > 0)
-            {
-                hitZ = BLOCK_IS_SOLID(chunk->blocks[intX][intY][intZ - 1]);
-            }
-            else
-            {
-                neighborChunk = world_get_chunk(chunk->x, chunk->z - 1);
-                hitZ = BLOCK_IS_SOLID(neighborChunk->blocks[intX][intY][CHUNK_WIDTH - 1]);
-            }
-        }
-        else if (fracZ > 1.0 - PLAYER_RADIUS)
-        {
-            //Check z + 1
-            if (intZ < CHUNK_WIDTH - 1)
-            {
-                hitZ = BLOCK_IS_SOLID(chunk->blocks[intX][intY][intZ + 1]);
-            }
-            else
-            {
-                neighborChunk = world_get_chunk(chunk->x, chunk->z + 1);
-                hitZ = BLOCK_IS_SOLID(neighborChunk->blocks[intX][intY][0]);
-            }
-        }
+        //TODO: Implement later when we are able to test this.
+        assert(state == MIDAIR);
     }
-    //clamp z position
-    if (hitZ)
+    else if (motion.y < 0.0) //Player hit the ground
     {
-        //text_draw_string(0, 16, false, "Z Collision");
-        newPosition.z = playerPosition.z;
-        intZ = world_to_block_coord(newPosition.z);
-    }
-    
-    if (state == MIDAIR) //We only need to check hitting the ground when the player is in midair
-    {
-        chunk = world_get_chunk_containing(newPosition.x, newPosition.z);
-        if (BLOCK_IS_SOLID(chunk->blocks[intX][intY][intZ]))
+        assert(state == MIDAIR);
+        if (BLOCK_IS_SOLID(world_get_block_at(playerPosition.x, playerPosition.y + motion.y, playerPosition.z)))
         {
             state = STANDING;
-            yVelocity = 0.0;
-            newPosition.y = intY + 1;
+            yVelocity = 0;
+            motion.y = 0;
         }
     }
-    else if (state == STANDING)
+    
+    if (motion.z > 0.0)
     {
-        assert(yVelocity == 0.0);
-        assert((float)intY == newPosition.y);
-        chunk = world_get_chunk_containing(newPosition.x, newPosition.z);
-        if (!BLOCK_IS_SOLID(chunk->blocks[intX][intY - 1][intZ]))
-            state = MIDAIR;
+        if (BLOCK_IS_SOLID(world_get_block_at(playerPosition.x, playerPosition.y, playerPosition.z + motion.z + PLAYER_RADIUS)))
+            motion.z = 0;
+    }
+    else if (motion.z < 0.0)
+    {
+        if (BLOCK_IS_SOLID(world_get_block_at(playerPosition.x, playerPosition.y, playerPosition.z + motion.z - PLAYER_RADIUS)))
+            motion.z = 0;
     }
     
-    playerPosition = newPosition;
+    playerPosition.x += motion.x;
+    playerPosition.y += motion.y;
+    playerPosition.z += motion.z;
+    
+    if (state == STANDING)
+    {
+        if (!BLOCK_IS_SOLID(world_get_block_at(playerPosition.x, playerPosition.y - 1.0, playerPosition.z)))
+        {
+            state = MIDAIR;
+        }
+    }
 }
 
 static void field_main(void)
