@@ -100,12 +100,12 @@ static void generate_land(struct Chunk *chunk)
     
     for (int i = 0; i < CHUNK_WIDTH; i++)
     {
-        int x1 = floor((float)(x + i) / WAVELENGTH) *WAVELENGTH;
+        int x1 = floorf((float)(x + i) / WAVELENGTH) *WAVELENGTH;
         int x2 = x1 + WAVELENGTH;
         float xBlend = (float)(x + i - x1) / (float)(WAVELENGTH);
         for (int j = 0; j < CHUNK_WIDTH; j++)
         {
-            int z1 = floor((float)(z + j) / WAVELENGTH) * WAVELENGTH;
+            int z1 = floorf((float)(z + j) / WAVELENGTH) * WAVELENGTH;
             int z2 = z1 + WAVELENGTH;
             float zBlend = (float)(z + j - z1) / (float)(WAVELENGTH);
             float a = lerp(rand_hash(x1, z1), rand_hash(x2, z1), xBlend);
@@ -201,6 +201,15 @@ int world_to_chunk_coord(float x)
     
     assert(x >= (float)ret * CHUNK_WIDTH);
     assert(x < (float)ret * CHUNK_WIDTH + CHUNK_WIDTH);
+    return ret;
+}
+
+int world_to_block_coord(float x)
+{
+    int ret = (unsigned int)floorf(x) % CHUNK_WIDTH;
+    
+    assert(ret >= 0);
+    assert(ret < CHUNK_WIDTH);
     return ret;
 }
 

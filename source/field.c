@@ -7,6 +7,15 @@
 #include "title_menu.h"
 #include "world.h"
 
+#define PLAYER_RADIUS 0.5
+
+enum
+{
+    STANDING,
+    MIDAIR,
+    SWIMMING,
+};
+
 struct Vec3f
 {
     float x;
@@ -15,8 +24,10 @@ struct Vec3f
 };
 
 static struct Vec3f playerPosition;
+static float yVelocity;
 static float yaw;  //positive value means looking right
 static float pitch;  //positive value means looking up
+static int state;
 
 static void field_main(void);
 static void field_draw(void);
@@ -57,18 +68,149 @@ static void open_pause_menu(void)
 // Overworld Functions
 //==================================================
 
+//TODO: This collision check can be improved.
+static void apply_motion_vector(struct Vec3f motion)
+{
+    struct Chunk *chunk;
+    struct Chunk *neighborChunk;
+    struct Vec3f newPosition;
+    float fracX, fracZ;
+    int intX, intY, intZ;
+    bool hitX = false;
+    bool hitZ = false;
+    
+    //We're not yet prepared to handle these cases
+    assert(fabsf(motion.x) <= 1.0);
+    assert(fabsf(motion.y) <= 1.0);
+    assert(fabsf(motion.z) <= 1.0);
+    newPosition.x = playerPosition.x + motion.x;
+    newPosition.y = playerPosition.y + motion.y;
+    newPosition.z = playerPosition.z + motion.z;
+    chunk = world_get_chunk_containing(newPosition.x, newPosition.z);
+    
+    intX = world_to_block_coord(newPosition.x);
+    intY = floorf(newPosition.y);
+    intZ = world_to_block_coord(newPosition.z);
+    fracX = newPosition.x - floorf(newPosition.x);
+    fracZ = newPosition.z - floorf(newPosition.z);
+    
+    hitX = BLOCK_IS_SOLID(chunk->blocks[intX][intY][intZ]);
+    if (!hitX)
+    {
+        if (fracX < PLAYER_RADIUS)
+        {
+            //Check x - 1
+            if (intX > 0)
+            {
+                hitX = BLOCK_IS_SOLID(chunk->blocks[intX - 1][intY][intZ]);
+            }
+            else
+            {
+                neighborChunk = world_get_chunk(chunk->x - 1, chunk->z);
+                hitX = BLOCK_IS_SOLID(neighborChunk->blocks[CHUNK_WIDTH - 1][intY][intZ]);
+            }
+        }
+        else if (fracX > 1.0 - PLAYER_RADIUS)
+        {
+            //Check x + 1
+            if (intX < CHUNK_WIDTH - 1)
+            {
+                hitX = BLOCK_IS_SOLID(chunk->blocks[intX + 1][intY][intZ]);
+            }
+            else
+            {
+                neighborChunk = world_get_chunk(chunk->x + 1, chunk->z);
+                hitX = BLOCK_IS_SOLID(neighborChunk->blocks[0][intY][intZ]);
+            }
+        }
+    }
+    //clamp x position
+    if (hitX)
+    {
+        //text_draw_string(0, 0, false, "X Collision");
+        //TODO: find maximum X position
+        newPosition.x = playerPosition.x;
+        intX = world_to_block_coord(newPosition.x);
+    }
+    
+    hitZ = BLOCK_IS_SOLID(chunk->blocks[intX][intY][intZ]);
+    if (!hitZ)
+    {
+        if (fracZ < PLAYER_RADIUS)
+        {
+            //Check z - 1
+            if (intZ > 0)
+            {
+                hitZ = BLOCK_IS_SOLID(chunk->blocks[intX][intY][intZ - 1]);
+            }
+            else
+            {
+                neighborChunk = world_get_chunk(chunk->x, chunk->z - 1);
+                hitZ = BLOCK_IS_SOLID(neighborChunk->blocks[intX][intY][CHUNK_WIDTH - 1]);
+            }
+        }
+        else if (fracZ > 1.0 - PLAYER_RADIUS)
+        {
+            //Check z + 1
+            if (intZ < CHUNK_WIDTH - 1)
+            {
+                hitZ = BLOCK_IS_SOLID(chunk->blocks[intX][intY][intZ + 1]);
+            }
+            else
+            {
+                neighborChunk = world_get_chunk(chunk->x, chunk->z + 1);
+                hitZ = BLOCK_IS_SOLID(neighborChunk->blocks[intX][intY][0]);
+            }
+        }
+    }
+    //clamp z position
+    if (hitZ)
+    {
+        //text_draw_string(0, 16, false, "Z Collision");
+        newPosition.z = playerPosition.z;
+        intZ = world_to_block_coord(newPosition.z);
+    }
+    
+    if (state == MIDAIR) //We only need to check hitting the ground when the player is in midair
+    {
+        chunk = world_get_chunk_containing(newPosition.x, newPosition.z);
+        if (BLOCK_IS_SOLID(chunk->blocks[intX][intY][intZ]))
+        {
+            state = STANDING;
+            yVelocity = 0.0;
+            newPosition.y = intY + 1;
+        }
+    }
+    else if (state == STANDING)
+    {
+        assert(yVelocity == 0.0);
+        assert((float)intY == newPosition.y);
+        chunk = world_get_chunk_containing(newPosition.x, newPosition.z);
+        if (!BLOCK_IS_SOLID(chunk->blocks[intX][intY - 1][intZ]))
+            state = MIDAIR;
+    }
+    
+    playerPosition = newPosition;
+}
+
 static void field_main(void)
 {
+    struct Vec3f motion;
     float forward = 0.0;
     float right = 0.0;
     float up = 0.0;
     
     if (gControllerPressedKeys & PAD_BUTTON_START)
         open_pause_menu();
-    if (gControllerHeldKeys & PAD_BUTTON_A)
-        up = 0.1;
-    else if (gControllerHeldKeys & PAD_BUTTON_B)
-        up = -0.1;
+    if (state == STANDING)
+    {
+        assert(yVelocity == 0.0);
+        if (gControllerPressedKeys & PAD_BUTTON_A)
+        {
+            state = MIDAIR;
+            yVelocity = 0.18;
+        }
+    }
     if (gCStickX > 10 || gCStickX < -10)
         yaw += (float)gCStickX / 100.0;
     if (gCStickY > 10 || gCStickY < -10)
@@ -89,11 +231,21 @@ static void field_main(void)
     else if (pitch < -90.0)
         pitch = -90.0;
     
-    playerPosition.z -= forward * sin(DegToRad(yaw + 90.0));
-    playerPosition.z -= right * cos(DegToRad(yaw + 90.0));
-    playerPosition.x += right * sin(DegToRad(yaw + 90.0));
-    playerPosition.x -= forward * cos(DegToRad(yaw + 90.0));
-    playerPosition.y += up;
+    switch (state)
+    {
+        case MIDAIR:
+            yVelocity -= 0.01;
+            break;
+        case SWIMMING: //not implemented yet.
+            break;
+    }
+    
+    motion.x = right * sin(DegToRad(yaw + 90.0)) - forward * cos(DegToRad(yaw + 90.0));
+    motion.y = yVelocity;
+    motion.z = -forward * sin(DegToRad(yaw + 90.0)) - right * cos(DegToRad(yaw + 90.0));
+    
+    //drawing_set_2d_mode();
+    apply_motion_vector(motion);
 }
 
 static void render_scene(void)
@@ -120,6 +272,24 @@ static void render_scene(void)
     world_render_chunks_at(playerPosition.x, playerPosition.z);
 }
 
+static char *get_state_text(void)
+{
+    switch (state)
+    {
+        case STANDING:
+            return "STANDING";
+            break;
+        case MIDAIR:
+            return "MIDAIR";
+            break;
+        case SWIMMING:
+            return "SWIMMING";
+            break;
+        default:
+            return "UNDEFINED";
+    }
+}
+
 static void field_draw(void)
 {
     struct Chunk *chunk = world_get_chunk_containing(playerPosition.x, playerPosition.z);
@@ -131,6 +301,7 @@ static void field_draw(void)
                                               playerPosition.x, playerPosition.y, playerPosition.z, chunk->x, chunk->z);
     text_draw_string_formatted(50, 66, false, "Camera angle: (%.2f, %.2f)",
                                               yaw, pitch);
+    text_draw_string_formatted(50, 82, false, "State: %s", get_state_text());
 }
 
 void field_init(void)
@@ -156,6 +327,8 @@ void field_init(void)
         }
     }
     playerPosition.y = y;
+    state = STANDING;
+    yVelocity = 0.0;
     
     set_main_callback(field_main);
     set_draw_callback(field_draw);

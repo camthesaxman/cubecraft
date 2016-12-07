@@ -14,5 +14,4 @@ For consoles that have not been soft-modded, you will need to use a game save ex
 The controls are simple. This game uses the GameCube controller exclusively.
 * Control Stick - move around
 * C Stick - change camera angle
-* A Button - go upwards
-* B Button - go downwards
+* A Button - jump
