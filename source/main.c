@@ -68,6 +68,10 @@ static void setup_graphics(void)
     GX_SetDispCopyGamma(GX_GM_1_0);
     
     GX_SetNumTexGens(1);
+    
+    GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GX_SetAlphaUpdate(GX_TRUE);
+    GX_SetColorUpdate(GX_TRUE);
 }
 
 static void read_input(void)

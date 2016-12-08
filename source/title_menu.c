@@ -3,26 +3,42 @@
 #include "drawing.h"
 #include "field.h"
 #include "main.h"
+#include "menu.h"
 #include "text.h"
 #include "title_menu.h"
 
+static struct MenuItem titleMenuItems[] = {
+    {"Start Game"},
+    {"Exit to Homebrew Channel"},
+};
+
+static struct Menu titleMenu = {
+    "Main Menu",
+    titleMenuItems,
+    ARRAY_LENGTH(titleMenuItems),
+};
+
 static void title_menu_main(void)
 {
-    if (gControllerPressedKeys & PAD_BUTTON_A)
-        field_init();
-    else if (gControllerPressedKeys & PAD_BUTTON_B)
-        exit(0);
+    switch (menu_process_input())
+    {
+        case 0:  //Start Game
+            field_init();
+            break;
+        case 1:  //Exit to Homebrew Channel
+            exit(0);
+            break;
+    }
 }
 
 static void title_menu_draw(void)
 {
-    text_draw_string(gDisplayWidth / 2, 100, true, "Welcome to CubeCraft!");
-    text_draw_string(gDisplayWidth / 2, 200, true, "Press the A button to start");
-    text_draw_string(gDisplayWidth / 2, 216, true, "Press the B button to exit to the Homebrew Channel");
+    menu_draw();
 }
 
 void title_menu_init(void)
 {
+    menu_init(&titleMenu);
     drawing_set_2d_mode();
     set_main_callback(title_menu_main);
     set_draw_callback(title_menu_draw);

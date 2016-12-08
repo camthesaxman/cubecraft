@@ -3,6 +3,7 @@
 #include "drawing.h"
 #include "field.h"
 #include "main.h"
+#include "menu.h"
 #include "text.h"
 #include "title_menu.h"
 #include "world.h"
@@ -35,6 +36,17 @@ static float yaw;  //positive value means looking right
 static float pitch;  //positive value means looking up
 static int state;
 
+static struct MenuItem pauseMenuItems[] = {
+    {"Continue"},
+    {"Quit"},
+};
+
+static struct Menu pauseMenu = {
+    "Paused",
+    pauseMenuItems,
+    ARRAY_LENGTH(pauseMenuItems),
+};
+
 static void field_main(void);
 static void field_draw(void);
 
@@ -44,28 +56,29 @@ static void field_draw(void);
 
 static void pause_menu_main(void)
 {
-    if (gControllerPressedKeys & PAD_BUTTON_START)
+    switch (menu_process_input())
     {
-        set_main_callback(field_main);
-        set_draw_callback(field_draw);
-    }
-    else if (gControllerPressedKeys & PAD_BUTTON_B)
-    {
-        world_close();
-        title_menu_init();
+        case 0: //Continue
+            set_main_callback(field_main);
+            set_draw_callback(field_draw);
+            break;
+        case 1: //Quit
+            world_close();
+            title_menu_init();
+            break;
     }
 }
 
 static void pause_menu_draw(void)
 {
-    text_draw_string(gDisplayWidth / 2, 100, true, "Game Paused");
-    text_draw_string(gDisplayWidth / 2, 200, true, "Press the START button to resume");
-    text_draw_string(gDisplayWidth / 2, 216, true, "Press the B button to go back to the title screen");
+    field_draw();
+    menu_draw();
 }
 
 static void open_pause_menu(void)
 {
     drawing_set_2d_mode();
+    menu_init(&pauseMenu);
     set_main_callback(pause_menu_main);
     set_draw_callback(pause_menu_draw);
 }
@@ -183,7 +196,6 @@ static void field_main(void)
     motion.y = yVelocity;
     motion.z = -forward * sin(DegToRad(yaw + 90.0)) - right * cos(DegToRad(yaw + 90.0));
     
-    //drawing_set_2d_mode();
     apply_motion_vector(motion);
 }
 

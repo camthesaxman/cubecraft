@@ -5,6 +5,8 @@
 #include <wiiuse/wpad.h>
 #include "debug.h"
 
+#define ARRAY_LENGTH(arr) (sizeof(arr) / sizeof(*arr))
+
 extern int gDisplayWidth;
 extern int gDisplayHeight;
 extern u16 gControllerPressedKeys;

@@ -14,12 +14,13 @@
 #define CHAR_HEIGHT 16
 
 static TPLFile fontTPL;
-static GXTexObj fontTexture;
+GXTexObj fontTexture;
 
 void text_load_textures(void)
 {
     TPL_OpenTPLFromMemory(&fontTPL, (void *)font_tpl, font_tpl_size);
     TPL_GetTexture(&fontTPL, fontTextureId, &fontTexture);
+    GX_InitTexObjFilterMode(&fontTexture, GX_NEAR, GX_NEAR);
     GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
     GX_InvalidateTexAll();
 }
@@ -36,7 +37,7 @@ void text_draw_string(int x, int y, bool center, char *string)
     GX_LoadTexObj(&fontTexture, GX_TEXMAP0);
     GX_SetNumTevStages(1);
     GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
-    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
+    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
     
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
