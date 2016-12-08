@@ -79,13 +79,15 @@ void menu_draw(void)
     int selectionRectRight = menuX + menuWidth - PADDING;
     int selectionRectTop = menuY + PADDING + selection * (PADDING + CHAR_HEIGHT);
     int selectionRectBottom = selectionRectTop + CHAR_HEIGHT;
-    u8 menuBackgroundColor[] ATTRIBUTE_ALIGN(32) = {0, 0, 0, 80};
+    u8 menuBackgroundColor[] ATTRIBUTE_ALIGN(32) = {255, 0, 0, 80};
     u8 selectionRectColor[] ATTRIBUTE_ALIGN(32) = {255, 255, 255};
     
     for (int i = 0; i < currentMenu->nItems; i++)
         numChars += strlen(currentMenu->items[i].text);
     
-    GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+    /*
+    GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
     GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX8);
@@ -103,6 +105,7 @@ void menu_draw(void)
     GX_Position2s16(menuX, menuY + menuHeight);
     GX_Color1x8(0);
     GX_End();
+    */
     
     GX_LoadTexObj(&fontTexture, GX_TEXMAP0);
     GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
