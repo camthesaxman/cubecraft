@@ -14,6 +14,8 @@ For consoles that have not been soft-modded, you will need to use a game save ex
 
 ## Controls
 The controls are simple. This game uses the GameCube controller exclusively.
-* Control Stick - move around
+* Control Stick - move around, navigate menus
+* Control Pad - navigate menus
 * C Stick - change camera angle
-* A Button - jump
+* A Button - jump, select menu
+* Start - pause
