@@ -59,6 +59,7 @@ struct Vertex
 struct Face
 {
     int tile;
+    int light;
     struct Vertex vertexes[4];
 };
 
@@ -325,36 +326,42 @@ static void add_face(int x, int y, int z, int direction, int block)
             face.vertexes[1] = (struct Vertex){0, 1, 0};
             face.vertexes[2] = (struct Vertex){0, 0, 0};
             face.vertexes[3] = (struct Vertex){0, 0, 1};
+            face.light = 13;
             break;
         case DIR_X_BACK:  //drawn clockwise looking x+
             face.vertexes[0] = (struct Vertex){0, 1, 0};
             face.vertexes[1] = (struct Vertex){0, 1, 1};
             face.vertexes[2] = (struct Vertex){0, 0, 1};
             face.vertexes[3] = (struct Vertex){0, 0, 0};
+            face.light = 9;
             break;
         case DIR_Y_FRONT:  //drawn clockwise looking y-
             face.vertexes[0] = (struct Vertex){0, 0, 0};
             face.vertexes[1] = (struct Vertex){1, 0, 0};
             face.vertexes[2] = (struct Vertex){1, 0, 1};
             face.vertexes[3] = (struct Vertex){0, 0, 1};
+            face.light = 15;
             break;
         case DIR_Y_BACK:  //drawn clockwise looking y+
             face.vertexes[0] = (struct Vertex){0, 0, 0};
             face.vertexes[1] = (struct Vertex){0, 0, 1};
             face.vertexes[2] = (struct Vertex){1, 0, 1};
             face.vertexes[3] = (struct Vertex){1, 0, 0};
+            face.light = 5;
             break;
         case DIR_Z_FRONT: //drawn clockwise looking z-
             face.vertexes[0] = (struct Vertex){0, 1, 0};
             face.vertexes[1] = (struct Vertex){1, 1, 0};
             face.vertexes[2] = (struct Vertex){1, 0, 0};
             face.vertexes[3] = (struct Vertex){0, 0, 0};
+            face.light = 11;
             break;
         case DIR_Z_BACK:  //drawn clockwise looking z+
             face.vertexes[0] = (struct Vertex){1, 1, 0};
             face.vertexes[1] = (struct Vertex){0, 1, 0};
             face.vertexes[2] = (struct Vertex){0, 0, 0};
             face.vertexes[3] = (struct Vertex){1, 0, 0};
+            face.light = 7;
             break;
         default:
             assert(false);  //bad direction parameter
@@ -431,10 +438,10 @@ static void build_chunk_display_list(struct Chunk *chunk)
     
     //The GX_DRAW_QUADS command takes up 3 bytes.
     //Each face is a quad with 4 vertexes.
-    //Each vertex takes up three "u16"s for the position coordinate and two "f32"s for the texture coordinate.
+    //Each vertex takes up three u16 for the position coordinate, one u8 for the color index, and two u16 for the texture coordinate.
     //Because of the write gathering pipe, an extra 63 bytes are needed.
-    listSize = 3 + facesListCount * 4 * (3 * sizeof(s16) + 2 * sizeof(u16)) + 63;
-    //The list size also must be a multiple of 32, so we round up.
+    listSize = 3 + facesListCount * 4 * (3 * sizeof(s16) + sizeof(u8) + 2 * sizeof(u16)) + 63;
+    //The list size also must be a multiple of 32, so round up to the next multiple of 32.
     listSize = round_up(listSize, 32);
     
     chunk->dispList = memalign(32, listSize);
@@ -459,6 +466,7 @@ static void build_chunk_display_list(struct Chunk *chunk)
             struct Vertex *vertex = &face->vertexes[j];
             
             GX_Position3s16(x + vertex->x, vertex->y, z + vertex->z);
+            GX_Color1x8(face->light);
             GX_TexCoord2u16(texCoords[j][0] + face->tile, texCoords[j][1]);
         }
     }
@@ -469,6 +477,25 @@ static void build_chunk_display_list(struct Chunk *chunk)
     free(facesList);
 }
 
+u8 lightLevels[16 * 3] ATTRIBUTE_ALIGN(32) = {
+    0,   0,   0,
+    16,  16,  16,
+    32,  32,  32,
+    48,  48,  48,
+    64,  64,  64,
+    80,  80,  80,
+    96,  96,  96,
+    112, 112, 112,
+    128, 128, 128,
+    144, 144, 144,
+    160, 160, 160,
+    176, 176, 176,
+    192, 192, 192,
+    208, 208, 208,
+    224, 224, 224,
+    240, 240, 240,
+};
+
 void world_render_chunks_at(float x, float z)
 {
     int chunkX = world_to_chunk_coord(x);
@@ -476,15 +503,18 @@ void world_render_chunks_at(float x, float z)
     
     GX_LoadTexObj(&blocksTexture, GX_TEXMAP0);
     GX_SetNumTevStages(1);
-    GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
-    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
+    GX_SetTevOp(GX_TEVSTAGE0, GX_MODULATE);
+    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
     GX_SetTexCoordScaleManually(GX_TEXCOORD0, GX_TRUE, TEX_BLOCK_WIDTH, TEX_BLOCK_HEIGHT);
     
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX8);
     GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
     GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_CLR0, GX_CLR_RGB, GX_RGB8, 0);
     GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
+    GX_SetArray(GX_VA_CLR0, lightLevels, 3 * sizeof(u8));
     
     for (int i = -CHUNK_RENDER_RADIUS / 2; i <= CHUNK_RENDER_RADIUS / 2; i++)
     {
@@ -497,6 +527,8 @@ void world_render_chunks_at(float x, float z)
             GX_CallDispList(chunk->dispList, chunk->dispListSize);
         }
     }
+    
+    GX_SetNumTevStages(1);
 }
 
 //==================================================
