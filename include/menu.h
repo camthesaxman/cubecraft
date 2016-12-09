@@ -8,7 +8,7 @@ struct MenuItem
 
 struct Menu
 {
-    char *title;
+    const char *title;
     struct MenuItem *items;
     int nItems;
 };

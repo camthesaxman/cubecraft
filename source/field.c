@@ -150,7 +150,6 @@ static void field_main(void)
     struct Vec3f motion;
     float forward = 0.0;
     float right = 0.0;
-    float up = 0.0;
     
     if (gControllerPressedKeys & PAD_BUTTON_START)
         open_pause_menu();
