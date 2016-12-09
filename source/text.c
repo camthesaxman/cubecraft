@@ -9,10 +9,6 @@
 #include "font_tpl.h"
 #include "font.h"
 
-#define NUM_GLYPHS 128
-#define CHAR_WIDTH 8
-#define CHAR_HEIGHT 16
-
 static TPLFile fontTPL;
 GXTexObj fontTexture;
 
@@ -32,34 +28,33 @@ void text_draw_string(int x, int y, bool center, char *string)
     int len = strlen(string);
     
     if (center)
-        left = left - len * CHAR_WIDTH / 2;
+        left = left - len * TEX_GLYPH_WIDTH / 2;
     
     GX_LoadTexObj(&fontTexture, GX_TEXMAP0);
     GX_SetNumTevStages(1);
     GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
     GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+    GX_SetTexCoordScaleManually(GX_TEXCOORD0, GX_TRUE, TEX_GLYPH_WIDTH, TEX_GLYPH_HEIGHT);
     
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
     GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_S16, 0);
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_U16, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
     
     GX_Begin(GX_QUADS, GX_VTXFMT0, len * 4);
     for (int i = 0; i < len; i++)
     {
-        int glyphIndex = string[i] - ' ';
-        float glyphLeft = (float)glyphIndex / (float)NUM_GLYPHS;
-        float glyphRight = (float)(glyphIndex + 1) / (float)NUM_GLYPHS;
+        int glyph = string[i] - ' ';
         
-        GX_Position2s16(left, top);
-        GX_TexCoord2f32(glyphLeft, 0.0),
-        GX_Position2s16(left + 8, top);
-        GX_TexCoord2f32(glyphRight, 0.0),
-        GX_Position2s16(left + 8, top + 16);
-        GX_TexCoord2f32(glyphRight, 1.0),
-        GX_Position2s16(left, top + 16);
-        GX_TexCoord2f32(glyphLeft, 1.0),
+        GX_Position2u16(left, top);
+        GX_TexCoord2u16(glyph, 0);
+        GX_Position2u16(left + TEX_GLYPH_WIDTH, top);
+        GX_TexCoord2u16(glyph + 1, 0);
+        GX_Position2u16(left + TEX_GLYPH_WIDTH, top + TEX_GLYPH_HEIGHT);
+        GX_TexCoord2u16(glyph + 1, 1);
+        GX_Position2u16(left, top + TEX_GLYPH_HEIGHT);
+        GX_TexCoord2u16(glyph, 1);
         
         left += 8;
     }

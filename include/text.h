@@ -1,6 +1,9 @@
 #ifndef GUARD_TEXT_H
 #define GUARD_TEXT_H
 
+#define TEX_GLYPH_WIDTH 8
+#define TEX_GLYPH_HEIGHT 16
+
 extern GXTexObj fontTexture;
 
 void text_load_textures(void);

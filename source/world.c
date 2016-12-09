@@ -13,6 +13,9 @@
 #define CHUNK_TABLE_WIDTH 16  //must be a power of two and larger than the render radius
 #define CHUNK_TABLE_CAPACITY (CHUNK_TABLE_WIDTH * CHUNK_TABLE_WIDTH)
 
+#define TEX_BLOCK_WIDTH 16
+#define TEX_BLOCK_HEIGHT 16
+
 enum
 {
     TILE_STONE,
@@ -24,6 +27,7 @@ enum
     TILE_TREE_SIDE,
     TILE_TREE_TOP,
     TILE_LEAVES,
+    NUM_TILES,
 };
 
 enum
@@ -41,7 +45,7 @@ static const u8 blockTiles[][6] =
 	[BLOCK_STONE]     = {TILE_STONE,      TILE_STONE,      TILE_STONE,    TILE_STONE,    TILE_STONE,      TILE_STONE},
 	[BLOCK_SAND]      = {TILE_SAND,       TILE_SAND,       TILE_SAND,     TILE_SAND,     TILE_SAND,       TILE_SAND},
 	[BLOCK_DIRT]      = {TILE_DIRT,       TILE_DIRT,       TILE_DIRT,     TILE_DIRT,     TILE_DIRT,       TILE_DIRT},
-	[BLOCK_GRASS] = {TILE_GRASS_SIDE, TILE_GRASS_SIDE, TILE_GRASS,    TILE_DIRT,     TILE_GRASS_SIDE, TILE_GRASS_SIDE},
+	[BLOCK_GRASS]     = {TILE_GRASS_SIDE, TILE_GRASS_SIDE, TILE_GRASS,    TILE_DIRT,     TILE_GRASS_SIDE, TILE_GRASS_SIDE},
 	[BLOCK_WOOD]      = {TILE_WOOD,       TILE_WOOD,       TILE_WOOD,     TILE_WOOD,     TILE_WOOD,       TILE_WOOD},
     [BLOCK_TREE]      = {TILE_TREE_SIDE,  TILE_TREE_SIDE,  TILE_TREE_TOP, TILE_TREE_TOP, TILE_TREE_SIDE,  TILE_TREE_SIDE},
     [BLOCK_LEAVES]    = {TILE_LEAVES,     TILE_LEAVES,     TILE_LEAVES,   TILE_LEAVES,   TILE_LEAVES,     TILE_LEAVES}
@@ -133,7 +137,6 @@ static void generate_land(struct Chunk *chunk)
     int heightmap[CHUNK_WIDTH][CHUNK_WIDTH];
     unsigned int x = chunk->x * CHUNK_WIDTH;
     unsigned int z = chunk->z * CHUNK_WIDTH;
-    u16 randVal = random(x) ^ random(z);
     int y;
     
     for (int i = 0; i < CHUNK_WIDTH; i++)
@@ -423,15 +426,6 @@ static void build_chunk_display_list(struct Chunk *chunk)
     size_t listSize;
     int x = chunk->x * CHUNK_WIDTH;
     int z = chunk->z * CHUNK_WIDTH;
-    int blockFace = 0;
-    float texLeft = (float)blockFace / 9.0;
-    float texRight = (float)(blockFace + 1) / 9.0;
-    f32 texCoords[] ATTRIBUTE_ALIGN(32) = {
-        texLeft,  0.0,
-        texRight, 0.0,
-        texRight, 1.0,
-        texLeft, 1.0,
-    };
     
     build_exposed_faces_list(chunk);
     
@@ -439,7 +433,7 @@ static void build_chunk_display_list(struct Chunk *chunk)
     //Each face is a quad with 4 vertexes.
     //Each vertex takes up three "u16"s for the position coordinate and two "f32"s for the texture coordinate.
     //Because of the write gathering pipe, an extra 63 bytes are needed.
-    listSize = 3 + facesListCount * 4 * (3 * sizeof(s16) + 2 * sizeof(f32)) + 63;
+    listSize = 3 + facesListCount * 4 * (3 * sizeof(s16) + 2 * sizeof(u16)) + 63;
     //The list size also must be a multiple of 32, so we round up.
     listSize = round_up(listSize, 32);
     
@@ -453,13 +447,19 @@ static void build_chunk_display_list(struct Chunk *chunk)
     for (int i = 0; i < facesListCount; i++)
     {
         struct Face *face = &facesList[i];
+        u16 texCoords[4][2] = {
+            {0, 0},
+            {1, 0},
+            {1, 1},
+            {0, 1}
+        };
         
         for (int j = 0; j < 4; j++)
         {
             struct Vertex *vertex = &face->vertexes[j];
             
             GX_Position3s16(x + vertex->x, vertex->y, z + vertex->z);
-            GX_TexCoord2f32(texCoords[j * 2] + (float)face->tile / 9.0, texCoords[j * 2 + 1]);
+            GX_TexCoord2u16(texCoords[j][0] + face->tile, texCoords[j][1]);
         }
     }
     GX_End();
@@ -478,12 +478,13 @@ void world_render_chunks_at(float x, float z)
     GX_SetNumTevStages(1);
     GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
     GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
+    GX_SetTexCoordScaleManually(GX_TEXCOORD0, GX_TRUE, TEX_BLOCK_WIDTH, TEX_BLOCK_HEIGHT);
     
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
     GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
     GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
-    GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
     
     for (int i = -CHUNK_RENDER_RADIUS / 2; i <= CHUNK_RENDER_RADIUS / 2; i++)
     {
