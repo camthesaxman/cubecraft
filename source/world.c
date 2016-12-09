@@ -21,6 +21,9 @@ enum
     TILE_GRASS_SIDE,
     TILE_GRASS,
     TILE_WOOD,
+    TILE_TREE_SIDE,
+    TILE_TREE_TOP,
+    TILE_LEAVES,
 };
 
 enum
@@ -35,11 +38,13 @@ enum
 
 static const u8 blockTiles[][6] =
 {
-	[BLOCK_STONE]     = {TILE_STONE,      TILE_STONE,      TILE_STONE, TILE_STONE, TILE_STONE,      TILE_STONE},
-	[BLOCK_SAND]      = {TILE_SAND,       TILE_SAND,       TILE_SAND,  TILE_SAND,  TILE_SAND,       TILE_SAND},
-	[BLOCK_DIRT]      = {TILE_DIRT,       TILE_DIRT,       TILE_DIRT,  TILE_DIRT,  TILE_DIRT,       TILE_DIRT},
-	[BLOCK_DIRTGRASS] = {TILE_GRASS_SIDE, TILE_GRASS_SIDE, TILE_GRASS, TILE_DIRT,  TILE_GRASS_SIDE, TILE_GRASS_SIDE},
-	[BLOCK_WOOD]      = {TILE_WOOD,       TILE_WOOD,       TILE_WOOD,  TILE_WOOD,  TILE_WOOD,       TILE_WOOD}
+	[BLOCK_STONE]     = {TILE_STONE,      TILE_STONE,      TILE_STONE,    TILE_STONE,    TILE_STONE,      TILE_STONE},
+	[BLOCK_SAND]      = {TILE_SAND,       TILE_SAND,       TILE_SAND,     TILE_SAND,     TILE_SAND,       TILE_SAND},
+	[BLOCK_DIRT]      = {TILE_DIRT,       TILE_DIRT,       TILE_DIRT,     TILE_DIRT,     TILE_DIRT,       TILE_DIRT},
+	[BLOCK_GRASS] = {TILE_GRASS_SIDE, TILE_GRASS_SIDE, TILE_GRASS,    TILE_DIRT,     TILE_GRASS_SIDE, TILE_GRASS_SIDE},
+	[BLOCK_WOOD]      = {TILE_WOOD,       TILE_WOOD,       TILE_WOOD,     TILE_WOOD,     TILE_WOOD,       TILE_WOOD},
+    [BLOCK_TREE]      = {TILE_TREE_SIDE,  TILE_TREE_SIDE,  TILE_TREE_TOP, TILE_TREE_TOP, TILE_TREE_SIDE,  TILE_TREE_SIDE},
+    [BLOCK_LEAVES]    = {TILE_LEAVES,     TILE_LEAVES,     TILE_LEAVES,   TILE_LEAVES,   TILE_LEAVES,     TILE_LEAVES}
 };
 
 struct Vertex
@@ -70,16 +75,19 @@ static void load_chunk_changes(struct Chunk *chunk);
 //==================================================
 
 #define WAVELENGTH 32
+#define LAND_HEIGHT_MIN 20
+#define LAND_HEIGHT_MAX 36
+#define MAX_TREES 4
 
 static u16 random(u16 a)
 {
-    unsigned int val = a ^ worldSeed;
-    val = val * 1103515245 + 12345;
+    u32 val = a ^ worldSeed;
+    val = val * 1103515245 >> 16;
     return val;
 }
 
 //Returns a random float between 0.0 and 1.0
-static float rand_hash(int a, int b)
+static float rand_hash_frac(int a, int b)
 {
     u16 hash = random(a) ^ random(b);
     
@@ -91,11 +99,41 @@ static float lerp(float a, float b, float x)
     return a + x * (b - a);
 }
 
+static void make_tree(struct Chunk *chunk, int x, int y, int z)
+{
+    int i, j;
+    
+    for (i = -1; i <= 1; i++)
+    {
+        for (j = -1; j <= 1; j++)
+        {
+            chunk->blocks[x + i][y + 3][z + j] = BLOCK_LEAVES;
+            chunk->blocks[x + i][y + 6][z + j] = BLOCK_LEAVES;
+        }
+    }
+    for (i = -2; i <= 2; i++)
+    {
+        assert(x + i >= 0);
+        assert(x + i < CHUNK_WIDTH);
+        for (j = -2; j <= 2; j++)
+        {
+            assert(z + j >= 0);
+            assert(z + j < CHUNK_WIDTH);
+            chunk->blocks[x + i][y + 4][z + j] = BLOCK_LEAVES;
+            chunk->blocks[x + i][y + 5][z + j] = BLOCK_LEAVES;
+        }
+    }
+    for (int i = 0; i < 4; i++)
+        chunk->blocks[x][y++][z] = BLOCK_TREE;
+    
+}
+
 static void generate_land(struct Chunk *chunk)
 {
-    float noisemap[CHUNK_WIDTH][CHUNK_WIDTH];
+    int heightmap[CHUNK_WIDTH][CHUNK_WIDTH];
     int x = chunk->x * CHUNK_WIDTH;
     int z = chunk->z * CHUNK_WIDTH;
+    u16 randVal = random(x) ^ random(z);
     int y;
     
     for (int i = 0; i < CHUNK_WIDTH; i++)
@@ -108,9 +146,9 @@ static void generate_land(struct Chunk *chunk)
             int z1 = floorf((float)(z + j) / WAVELENGTH) * WAVELENGTH;
             int z2 = z1 + WAVELENGTH;
             float zBlend = (float)(z + j - z1) / (float)(WAVELENGTH);
-            float a = lerp(rand_hash(x1, z1), rand_hash(x2, z1), xBlend);
-            float b = lerp(rand_hash(x1, z2), rand_hash(x2, z2), xBlend);
-            noisemap[i][j] = lerp(a, b, zBlend);
+            float a = lerp(rand_hash_frac(x1, z1), rand_hash_frac(x2, z1), xBlend);
+            float b = lerp(rand_hash_frac(x1, z2), rand_hash_frac(x2, z2), xBlend);
+            heightmap[i][j] = (float)LAND_HEIGHT_MIN + (float)(LAND_HEIGHT_MAX - LAND_HEIGHT_MIN) * lerp(a, b, zBlend);
         }
     }
     
@@ -118,8 +156,10 @@ static void generate_land(struct Chunk *chunk)
     {
         for (z = 0; z < CHUNK_WIDTH; z++)
         {
-            int landHeight = 20.0 + 16.0 * noisemap[x][z];
+            int landHeight = heightmap[x][z];
             
+            assert(landHeight >= LAND_HEIGHT_MIN);
+            assert(landHeight <= LAND_HEIGHT_MAX);
             for (y = 0; y < landHeight; y++)
             {
                 if (y < 22)
@@ -127,13 +167,25 @@ static void generate_land(struct Chunk *chunk)
                 else if (y < 25)
                     chunk->blocks[x][y][z] = BLOCK_SAND;
                 else if (y == landHeight - 1)
-                    chunk->blocks[x][y][z] = BLOCK_DIRTGRASS;
+                    chunk->blocks[x][y][z] = BLOCK_GRASS;
                 else
                     chunk->blocks[x][y][z] = BLOCK_DIRT;
             }
             for (; y < CHUNK_HEIGHT; y++)
                 chunk->blocks[x][y][z] = BLOCK_AIR;
         }
+    }
+    
+    for (int i = 0; i < MAX_TREES; i++)
+    {
+        //We want to keep things simple and avoid having the tree leaves overlap into neighboring chunks
+        x = 2 + (random(z) % (CHUNK_WIDTH - 4));
+        z = 2 + (random(x) % (CHUNK_WIDTH - 4));
+        y = heightmap[x][z];
+       
+        //Trees should only grow on grass
+        if (chunk->blocks[x][y - 1][z] == BLOCK_GRASS)
+            make_tree(chunk, x, y, z);
     }
 }
 
@@ -372,8 +424,8 @@ static void build_chunk_display_list(struct Chunk *chunk)
     int x = chunk->x * CHUNK_WIDTH;
     int z = chunk->z * CHUNK_WIDTH;
     int blockFace = 0;
-    float texLeft = (float)blockFace / 8.0;
-    float texRight = (float)(blockFace + 1) / 8.0;
+    float texLeft = (float)blockFace / 9.0;
+    float texRight = (float)(blockFace + 1) / 9.0;
     f32 texCoords[] ATTRIBUTE_ALIGN(32) = {
         texLeft,  0.0,
         texRight, 0.0,
@@ -407,7 +459,7 @@ static void build_chunk_display_list(struct Chunk *chunk)
             struct Vertex *vertex = &face->vertexes[j];
             
             GX_Position3s16(x + vertex->x, vertex->y, z + vertex->z);
-            GX_TexCoord2f32(texCoords[j * 2] + (float)face->tile / 8.0, texCoords[j * 2 + 1]);
+            GX_TexCoord2f32(texCoords[j * 2] + (float)face->tile / 9.0, texCoords[j * 2 + 1]);
         }
     }
     GX_End();
