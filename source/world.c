@@ -131,24 +131,24 @@ static void make_tree(struct Chunk *chunk, int x, int y, int z)
 static void generate_land(struct Chunk *chunk)
 {
     int heightmap[CHUNK_WIDTH][CHUNK_WIDTH];
-    int x = chunk->x * CHUNK_WIDTH;
-    int z = chunk->z * CHUNK_WIDTH;
+    unsigned int x = chunk->x * CHUNK_WIDTH;
+    unsigned int z = chunk->z * CHUNK_WIDTH;
     u16 randVal = random(x) ^ random(z);
     int y;
     
     for (int i = 0; i < CHUNK_WIDTH; i++)
     {
-        int x1 = floorf((float)(x + i) / WAVELENGTH) *WAVELENGTH;
-        int x2 = x1 + WAVELENGTH;
+        unsigned int x1 = ((x + i) / WAVELENGTH) * WAVELENGTH;
+        unsigned int x2 = x1 + WAVELENGTH;
         float xBlend = (float)(x + i - x1) / (float)(WAVELENGTH);
         for (int j = 0; j < CHUNK_WIDTH; j++)
         {
-            int z1 = floorf((float)(z + j) / WAVELENGTH) * WAVELENGTH;
-            int z2 = z1 + WAVELENGTH;
+            unsigned int z1 = ((z + j) / WAVELENGTH) * WAVELENGTH;
+            unsigned int z2 = z1 + WAVELENGTH;
             float zBlend = (float)(z + j - z1) / (float)(WAVELENGTH);
             float a = lerp(rand_hash_frac(x1, z1), rand_hash_frac(x2, z1), xBlend);
             float b = lerp(rand_hash_frac(x1, z2), rand_hash_frac(x2, z2), xBlend);
-            heightmap[i][j] = (float)LAND_HEIGHT_MIN + (float)(LAND_HEIGHT_MAX - LAND_HEIGHT_MIN) * lerp(a, b, zBlend);
+            heightmap[i][j] = LAND_HEIGHT_MIN + (float)(LAND_HEIGHT_MAX - LAND_HEIGHT_MIN) * lerp(a, b, zBlend);
         }
     }
     
