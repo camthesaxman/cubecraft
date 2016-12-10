@@ -9,8 +9,8 @@
 #include "blocks_tpl.h"
 #include "blocks.h"
 
-#define CHUNK_RENDER_RADIUS 10
-#define CHUNK_TABLE_WIDTH 16  //must be a power of two and larger than the render radius
+#define CHUNK_RENDER_RANGE 10
+#define CHUNK_TABLE_WIDTH 16  //must be a power of two and larger than the render range
 #define CHUNK_TABLE_CAPACITY (CHUNK_TABLE_WIDTH * CHUNK_TABLE_WIDTH)
 
 #define TEX_BLOCK_WIDTH 16
@@ -74,6 +74,7 @@ static u16 worldSeed = 54321;
 static struct Chunk chunkTable[CHUNK_TABLE_WIDTH][CHUNK_TABLE_WIDTH];
 
 static void load_chunk_changes(struct Chunk *chunk);
+static void build_chunk_display_list(struct Chunk *chunk);
 
 //==================================================
 // Land Generation
@@ -283,6 +284,19 @@ int world_get_block_at(float x, float y, float z)
     assert(blockZ >= 0);
     assert(blockZ < CHUNK_WIDTH);
     return chunk->blocks[blockX][blockY][blockZ];
+}
+
+void world_set_block(int x, int y, int z, int type)
+{
+    struct Chunk *chunk = world_get_chunk_containing(x, z);
+    
+    int blockX = world_to_block_coord(x);
+    int blockY = y;
+    int blockZ = world_to_block_coord(z);
+    
+    chunk->blocks[blockX][blockY][blockZ] = type;
+    free(chunk->dispList);
+    build_chunk_display_list(chunk);
 }
 
 //==================================================
@@ -516,9 +530,9 @@ void world_render_chunks_at(float x, float z)
     GX_SetVtxAttrFmt(GX_VTXFMT1, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
     GX_SetArray(GX_VA_CLR0, lightLevels, 3 * sizeof(u8));
     
-    for (int i = -CHUNK_RENDER_RADIUS / 2; i <= CHUNK_RENDER_RADIUS / 2; i++)
+    for (int i = -CHUNK_RENDER_RANGE / 2; i <= CHUNK_RENDER_RANGE / 2; i++)
     {
-        for (int j = -CHUNK_RENDER_RADIUS / 2; j <= CHUNK_RENDER_RADIUS / 2; j++)
+        for (int j = -CHUNK_RENDER_RANGE / 2; j <= CHUNK_RENDER_RANGE / 2; j++)
         {
             struct Chunk *chunk = world_get_chunk(chunkX + i, chunkZ + j);
             
