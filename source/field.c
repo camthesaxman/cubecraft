@@ -325,7 +325,7 @@ static void draw_block_selection(void)
     }
     else if (selectedBlockFace.z != 0)
     {
-        float z = selectedBlockPos.z + ((selectedBlockPos.z > 0) ? 1 : 0);
+        float z = selectedBlockPos.z + ((selectedBlockFace.z > 0) ? 1 : 0);
         
         GX_Position3f32(selectedBlockPos.x, selectedBlockPos.y + 1, z);
         GX_Color1x8(0);
