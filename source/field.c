@@ -105,98 +105,75 @@ static void open_pause_menu(void)
 //See "A Fast Voxel Traversal Algorithm for Ray Tracing" by John Amanatides and Andrew Woo
 static void get_selected_block(void)
 {
-    puts("finding selected block");
     struct Vec3f direction = {
-        cos(DegToRad(90 - yaw)) * cos(DegToRad(pitch)),
-        sin(DegToRad(pitch)),
-        -sin(DegToRad(90 - yaw)) * cos(DegToRad(pitch)),
+        cosf(DegToRad(90 - yaw)) * cosf(DegToRad(pitch)),
+        sinf(DegToRad(pitch)),
+        -sinf(DegToRad(90 - yaw)) * cosf(DegToRad(pitch)),
     };
-   
-    int t = 0;  //distance along the ray
+    float eyeY = playerPosition.y + EYE_LEVEL;
     //coordinates of block we are currently at
     int x = floorf(playerPosition.x);
-    int y = floorf(playerPosition.y + EYE_LEVEL);
+    int y = floorf(eyeY);
     int z = floorf(playerPosition.z);
     //increment/decrement coordinates
     int stepX = 0;
     int stepY = 0;
     int stepZ = 0;
-    //distance it takes in each direction to increment t by one
+    //ray distance it takes to equal one unit in each direction
     float tDeltaX = INFINITY;
     float tDeltaY = INFINITY;
     float tDeltaZ = INFINITY;
-    //
+    //ray distance it takes to move to next block boundary in each direction
     float tMaxX = INFINITY;
     float tMaxY = INFINITY;
     float tMaxZ = INFINITY;
     
-    //get rid of the stupid negative zero
-     if (yaw == 0.0)
-        direction.x = 0.0;
-    if (pitch == 0.0)
-        direction.y = 0.0;
-    if (pitch == 90 || pitch == -90)
-    {
-        direction.x = 0.0;
-        direction.z = 0.0;
-    }
-    printf("direction: %.2f, %.2f, %.2f", direction.x, direction.y, direction.z);
-    
     if (direction.x > 0.0)
     {
         stepX = 1;
-        tDeltaX = 1.0 / direction.x;
-        tMaxX = (floorf(playerPosition.x + 1.0) - playerPosition.x) / direction.x;
+        tDeltaX = fabsf(1.0 / direction.x);
+        tMaxX = fabsf((floorf(playerPosition.x + 1.0) - playerPosition.x) / direction.x);
     }
     else if (direction.x < 0.0)
     {
         stepX = -1;
-        tDeltaX = 1.0 / direction.x;
-        tMaxX = (playerPosition.x - ceilf(playerPosition.x - 1.0)) / direction.x;
+        tDeltaX = fabsf(1.0 / direction.x);
+        tMaxX = fabsf((playerPosition.x - ceilf(playerPosition.x - 1.0)) / direction.x);
     }
     if (direction.y > 0.0)
-    {
+    {        
         stepY = 1;
-        tDeltaY = 1.0 / direction.y;
-        tMaxY = (floorf(playerPosition.y + EYE_LEVEL + 1.0) - playerPosition.y) / direction.y;
+        tDeltaY = fabsf(1.0 / direction.y);
+        tMaxY = fabsf((floorf(eyeY + 1.0) - eyeY) / direction.y);
     }
     else if (direction.y < -0.0)
     {
         stepY = -1;
-        tDeltaY = 1.0 / direction.y;
-        tMaxY = (playerPosition.y - ceilf(playerPosition.y + EYE_LEVEL - 1.0)) / direction.y;
+        tDeltaY = fabsf(1.0 / direction.y);
+        tMaxY = fabsf((eyeY - ceilf(eyeY - 1.0)) / direction.y);
     }
     if (direction.z > 0.0)
     {
         stepZ = 1;
-        tDeltaZ = 1.0 / direction.z;
-        tMaxZ = (floorf(playerPosition.z + 1.0) - playerPosition.z) / direction.z;
+        tDeltaZ = fabsf(1.0 / direction.z);
+        tMaxZ = fabsf((floorf(playerPosition.z + 1.0) - playerPosition.z) / direction.z);
     }
     else if (direction.z < -0.0)
     {
         stepZ = -1;
-        tDeltaZ = 1.0 / direction.z;
-        tMaxZ = (playerPosition.z - ceilf(playerPosition.z - 1.0)) / direction.z;
+        tDeltaZ = fabsf(1.0 / direction.z);
+        tMaxZ = fabsf((playerPosition.z - ceilf(playerPosition.z - 1.0)) / direction.z);
     }
     
-    tMaxX = fabsf(tMaxX);
-    tMaxY = fabsf(tMaxY);
-    tMaxZ = fabsf(tMaxZ);
-    tDeltaX = fabsf(tDeltaX);
-    tDeltaY = fabsf(tDeltaY);
-    tDeltaZ = fabsf(tDeltaZ);
-    selectedBlockFace.x = 0;
-    selectedBlockFace.y = 0;
-    selectedBlockFace.z = 0;
-    printf("tDelta: %.2f, %.2f, %.2f", tDeltaX, tDeltaY, tDeltaZ);
-    do
+    selectedBlockActive = false;
+    
+    for (int i = 0; i < SELECT_RADIUS; i++)
     {
-        printf("tMax: %.2f, %.2f, %.2f", tMaxX, tMaxY, tMaxZ);
         if (tMaxX < tMaxY)
         {
             if (tMaxX < tMaxZ)
             {
-                puts("x");
+                //increment x
                 tMaxX += tDeltaX;
                 x += stepX;
                 selectedBlockFace.x = -stepX;
@@ -205,19 +182,14 @@ static void get_selected_block(void)
             }
             else
             {
-                puts("z");
-                tMaxZ += tDeltaZ;
-                z += stepZ;
-                selectedBlockFace.x = 0;
-                selectedBlockFace.y = 0;
-                selectedBlockFace.z = -stepZ;
+                goto increment_z;
             }
         }
         else
         {
             if (tMaxY < tMaxZ)
             {
-                puts("y");
+                //increment y
                 tMaxY += tDeltaY;
                 y += stepY;
                 selectedBlockFace.x = 0;
@@ -226,7 +198,8 @@ static void get_selected_block(void)
             }
             else
             {
-                puts("z");
+                //increment z
+              increment_z:
                 tMaxZ += tDeltaZ;
                 z += stepZ;
                 selectedBlockFace.x = 0;
@@ -235,20 +208,15 @@ static void get_selected_block(void)
             }
         }
         
-        printf("block: %i, %i, %i\n", x, y, z);
         if (BLOCK_IS_SOLID(world_get_block_at(x, y, z)))
         {
             selectedBlockPos.x = x;
             selectedBlockPos.y = y;
             selectedBlockPos.z = z;
             selectedBlockActive = true;
-            puts("found block");
             return;
         }
-        t++;
-    } while(t < SELECT_RADIUS);
-    selectedBlockActive = false;
-    puts("did not find block");
+    }
 }
 
 static void draw_crosshair(void)
@@ -453,9 +421,9 @@ static void field_main(void)
             break;
     }
     
-    motion.x = right * sin(DegToRad(yaw + 90.0)) - forward * cos(DegToRad(yaw + 90.0));
+    motion.x = right * sinf(DegToRad(yaw + 90.0)) - forward * cosf(DegToRad(yaw + 90.0));
     motion.y = yVelocity;
-    motion.z = -forward * sin(DegToRad(yaw + 90.0)) - right * cos(DegToRad(yaw + 90.0));
+    motion.z = -forward * sinf(DegToRad(yaw + 90.0)) - right * cosf(DegToRad(yaw + 90.0));
     
     apply_motion_vector(motion);
     get_selected_block();
@@ -512,7 +480,6 @@ static void field_draw(void)
     if (selectedBlockActive)
         draw_block_selection();
     drawing_set_2d_mode();
-    puts("test");
     text_draw_string_formatted(50, 50, false, "Position: (%.2f, %.2f, %.2f), Chunk: (%i, %i)",
                                               playerPosition.x, playerPosition.y, playerPosition.z, chunk->x, chunk->z);
     text_draw_string_formatted(50, 66, false, "Camera angle: (%.2f, %.2f)",
