@@ -1,6 +1,6 @@
 #include "global.h"
 #include "text.h"
-#include "title_menu.h"
+#include "title_screen.h"
 #include "world.h"
 
 #define DEFAULT_FIFO_SIZE	(256*1024)
@@ -84,11 +84,15 @@ static void read_input(void)
 int main(void)
 {
     PAD_Init();
-    
     setup_graphics();
+    
+    //Load textures
+    title_screen_load_textures();
     world_load_textures();
     text_load_textures();
-    title_menu_init();
+    
+    //Start title screen
+    title_screen_init();
     
     while (1)
     {

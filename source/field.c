@@ -4,7 +4,7 @@
 #include "main.h"
 #include "menu.h"
 #include "text.h"
-#include "title_menu.h"
+#include "title_screen.h"
 #include "world.h"
 
 //For collision detection
@@ -79,7 +79,7 @@ static void pause_menu_main(void)
             break;
         case 1: //Quit
             world_close();
-            title_menu_init();
+            title_screen_init();
             break;
     }
 }
