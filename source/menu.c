@@ -1,4 +1,3 @@
-#include <string.h>
 #include "global.h"
 #include "menu.h"
 #include "text.h"

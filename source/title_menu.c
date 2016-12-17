@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include "global.h"
 #include "drawing.h"
 #include "field.h"

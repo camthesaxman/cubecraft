@@ -1,7 +1,3 @@
-#include <malloc.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
 #include "global.h"
 #include "text.h"
 #include "title_menu.h"
