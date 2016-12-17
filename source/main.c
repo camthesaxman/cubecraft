@@ -1,4 +1,6 @@
 #include "global.h"
+#include "inventory.h"
+#include "main.h"
 #include "text.h"
 #include "title_screen.h"
 #include "world.h"
@@ -90,6 +92,7 @@ int main(void)
     title_screen_load_textures();
     world_load_textures();
     text_load_textures();
+    inventory_load_textures();
     
     //Start title screen
     title_screen_init();

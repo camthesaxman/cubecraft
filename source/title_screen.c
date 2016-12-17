@@ -102,7 +102,7 @@ static void title_screen_main(void)
 static void title_screen_draw(void)
 {
     draw_title_banner();
-    if (pressStartBlinkCounter & 0x10)
+    if (!(pressStartBlinkCounter & 0x10))
         text_draw_string(gDisplayWidth / 2, 200, true, "Press Start");
     pressStartBlinkCounter++;
 }

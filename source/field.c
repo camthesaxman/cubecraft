@@ -1,6 +1,7 @@
 #include "global.h"
 #include "drawing.h"
 #include "field.h"
+#include "inventory.h"
 #include "main.h"
 #include "menu.h"
 #include "text.h"
@@ -390,7 +391,35 @@ static void field_main(void)
     if (gControllerPressedKeys & PAD_BUTTON_B)
     {
         if (selectedBlockActive)
+        {
+            int block = world_get_block_at(selectedBlockPos.x, selectedBlockPos.y, selectedBlockPos.z);
+            
             world_set_block(selectedBlockPos.x, selectedBlockPos.y, selectedBlockPos.z, BLOCK_AIR);
+            inventory_add_block(block);
+        }
+    }
+    else if (gControllerPressedKeys & PAD_BUTTON_Y)
+    {
+        if (selectedBlockActive && inventory[inventorySelection].count > 0)
+        {
+            world_set_block(selectedBlockPos.x + selectedBlockFace.x,
+                            selectedBlockPos.y + selectedBlockFace.y,
+                            selectedBlockPos.z + selectedBlockFace.z,
+                            inventory[inventorySelection].type);
+            inventory[inventorySelection].count--;
+        }
+    }
+    if (gControllerPressedKeys & PAD_BUTTON_LEFT)
+    {
+        inventorySelection--;
+        if (inventorySelection == -1)
+            inventorySelection = NUM_ITEM_SLOTS - 1;
+    }
+    else if (gControllerPressedKeys & PAD_BUTTON_RIGHT)
+    {
+        inventorySelection++;
+        if (inventorySelection == NUM_ITEM_SLOTS)
+            inventorySelection = 0;
     }
     if (gCStickX > 10 || gCStickX < -10)
         yaw += (float)gCStickX / 100.0;
@@ -480,6 +509,7 @@ static void field_draw(void)
     if (selectedBlockActive)
         draw_block_selection();
     drawing_set_2d_mode();
+    inventory_draw();
     text_draw_string_formatted(50, 50, false, "Position: (%.2f, %.2f, %.2f), Chunk: (%i, %i)",
                                               playerPosition.x, playerPosition.y, playerPosition.z, chunk->x, chunk->z);
     text_draw_string_formatted(50, 66, false, "Camera angle: (%.2f, %.2f)",
@@ -518,6 +548,7 @@ void field_init(void)
     state = STANDING;
     yVelocity = 0.0;
     selectedBlockActive = false;
+    inventory_init();
     
     set_main_callback(field_main);
     set_draw_callback(field_draw);

@@ -5,7 +5,7 @@
 #include "blocks_tpl.h"
 #include "blocks.h"
 
-#define CHUNK_RENDER_RANGE 10
+#define CHUNK_RENDER_RANGE 3
 #define CHUNK_TABLE_WIDTH 16  //must be a power of two and larger than the render range
 #define CHUNK_TABLE_CAPACITY (CHUNK_TABLE_WIDTH * CHUNK_TABLE_WIDTH)
 
@@ -23,6 +23,11 @@ enum
     TILE_TREE_SIDE,
     TILE_TREE_TOP,
     TILE_LEAVES,
+    TILE_GC_FRONT,
+    TILE_GC_TOP,
+    TILE_GC_SIDE,
+    TILE_GC_BACK,
+    TILE_GC_BOTTOM,
     NUM_TILES,
 };
 
@@ -38,13 +43,14 @@ enum
 
 static const u8 blockTiles[][6] =
 {
-	[BLOCK_STONE]     = {TILE_STONE,      TILE_STONE,      TILE_STONE,    TILE_STONE,    TILE_STONE,      TILE_STONE},
-	[BLOCK_SAND]      = {TILE_SAND,       TILE_SAND,       TILE_SAND,     TILE_SAND,     TILE_SAND,       TILE_SAND},
-	[BLOCK_DIRT]      = {TILE_DIRT,       TILE_DIRT,       TILE_DIRT,     TILE_DIRT,     TILE_DIRT,       TILE_DIRT},
-	[BLOCK_GRASS]     = {TILE_GRASS_SIDE, TILE_GRASS_SIDE, TILE_GRASS,    TILE_DIRT,     TILE_GRASS_SIDE, TILE_GRASS_SIDE},
-	[BLOCK_WOOD]      = {TILE_WOOD,       TILE_WOOD,       TILE_WOOD,     TILE_WOOD,     TILE_WOOD,       TILE_WOOD},
-    [BLOCK_TREE]      = {TILE_TREE_SIDE,  TILE_TREE_SIDE,  TILE_TREE_TOP, TILE_TREE_TOP, TILE_TREE_SIDE,  TILE_TREE_SIDE},
-    [BLOCK_LEAVES]    = {TILE_LEAVES,     TILE_LEAVES,     TILE_LEAVES,   TILE_LEAVES,   TILE_LEAVES,     TILE_LEAVES}
+	[BLOCK_STONE]     = {TILE_STONE,      TILE_STONE,      TILE_STONE,    TILE_STONE,     TILE_STONE,      TILE_STONE},
+	[BLOCK_SAND]      = {TILE_SAND,       TILE_SAND,       TILE_SAND,     TILE_SAND,      TILE_SAND,       TILE_SAND},
+	[BLOCK_DIRT]      = {TILE_DIRT,       TILE_DIRT,       TILE_DIRT,     TILE_DIRT,      TILE_DIRT,       TILE_DIRT},
+	[BLOCK_GRASS]     = {TILE_GRASS_SIDE, TILE_GRASS_SIDE, TILE_GRASS,    TILE_DIRT,      TILE_GRASS_SIDE, TILE_GRASS_SIDE},
+	[BLOCK_WOOD]      = {TILE_WOOD,       TILE_WOOD,       TILE_WOOD,     TILE_WOOD,      TILE_WOOD,       TILE_WOOD},
+    [BLOCK_TREE]      = {TILE_TREE_SIDE,  TILE_TREE_SIDE,  TILE_TREE_TOP, TILE_TREE_TOP,  TILE_TREE_SIDE,  TILE_TREE_SIDE},
+    [BLOCK_LEAVES]    = {TILE_LEAVES,     TILE_LEAVES,     TILE_LEAVES,   TILE_LEAVES,    TILE_LEAVES,     TILE_LEAVES},
+    [BLOCK_GAMECUBE]  = {TILE_GC_SIDE,    TILE_GC_SIDE,    TILE_GC_TOP,   TILE_GC_BOTTOM, TILE_GC_FRONT,   TILE_GC_BACK}
 };
 
 struct Vertex
@@ -135,8 +141,12 @@ static void generate_land(struct Chunk *chunk)
     int heightmap[CHUNK_WIDTH][CHUNK_WIDTH];
     unsigned int x = chunk->x * CHUNK_WIDTH;
     unsigned int z = chunk->z * CHUNK_WIDTH;
+    int gameCubeX;
+    int gameCubeY;
+    int gameCubeZ;
     int y;
     
+    //Calculate land height
     for (int i = 0; i < CHUNK_WIDTH; i++)
     {
         unsigned int x1 = ((x + i) / WAVELENGTH) * WAVELENGTH;
@@ -153,6 +163,7 @@ static void generate_land(struct Chunk *chunk)
         }
     }
     
+    //Add terrain
     for (x = 0; x < CHUNK_WIDTH; x++)
     {
         for (z = 0; z < CHUNK_WIDTH; z++)
@@ -177,6 +188,7 @@ static void generate_land(struct Chunk *chunk)
         }
     }
     
+    //Add trees
     for (int i = 0; i < MAX_TREES; i++)
     {
         //We want to keep things simple and avoid having the tree leaves overlap into neighboring chunks
@@ -188,6 +200,15 @@ static void generate_land(struct Chunk *chunk)
         if (chunk->blocks[x][y - 1][z] == BLOCK_GRASS)
             make_tree(chunk, x, y, z);
     }
+    
+    //Bury one secret Gamecube in each chunk
+    gameCubeX = random(x);
+    gameCubeY = random(gameCubeX);
+    gameCubeZ = random(gameCubeY);
+    gameCubeX %= CHUNK_WIDTH;
+    gameCubeZ %= CHUNK_WIDTH;
+    gameCubeY %= heightmap[gameCubeX][gameCubeZ];
+    chunk->blocks[gameCubeX][gameCubeY][gameCubeZ] = BLOCK_GAMECUBE;
 }
 
 //==================================================

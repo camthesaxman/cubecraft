@@ -15,6 +15,7 @@ enum
 	BLOCK_WOOD,
     BLOCK_TREE,
     BLOCK_LEAVES,
+    BLOCK_GAMECUBE,
 };
 
 #define BLOCK_IS_SOLID(b)   ((b) != BLOCK_AIR && (b) != BLOCK_WATER)
