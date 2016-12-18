@@ -264,52 +264,52 @@ static void draw_block_selection(void)
     GX_Begin(GX_LINESTRIP, GX_VTXFMT0, 5);
     if (selectedBlockFace.x != 0)
     {
-        int x = selectedBlockPos.x + ((selectedBlockFace.x > 0) ? 1 : 0);
+        float x = selectedBlockPos.x + ((selectedBlockFace.x > 0) ? 1.01 : -0.01);
         
-        GX_Position3f32(x, selectedBlockPos.y + 1, selectedBlockPos.z + 1);
+        GX_Position3f32(x, selectedBlockPos.y + 0.99, selectedBlockPos.z + 0.99);
         GX_Color1x8(0);
-        GX_Position3f32(x, selectedBlockPos.y + 1, selectedBlockPos.z);
+        GX_Position3f32(x, selectedBlockPos.y + 0.99, selectedBlockPos.z + 0.01);
         GX_Color1x8(0);
-        GX_Position3f32(x, selectedBlockPos.y, selectedBlockPos.z);
+        GX_Position3f32(x, selectedBlockPos.y + 0.01, selectedBlockPos.z + 0.01);
         GX_Color1x8(0);
-        GX_Position3f32(x, selectedBlockPos.y, selectedBlockPos.z + 1);
+        GX_Position3f32(x, selectedBlockPos.y + 0.01, selectedBlockPos.z + 0.99);
         GX_Color1x8(0);
-        GX_Position3f32(x, selectedBlockPos.y + 1, selectedBlockPos.z + 1);
+        GX_Position3f32(x, selectedBlockPos.y + 0.99, selectedBlockPos.z + 0.99);
         GX_Color1x8(0);
     }
     else if (selectedBlockFace.y != 0)
     {
-        int y = selectedBlockPos.y + ((selectedBlockFace.y > 0) ? 1 : 0);
+        float y = selectedBlockPos.y + ((selectedBlockFace.y > 0) ? 1.01 : -0.01);
         
-        GX_Position3f32(selectedBlockPos.x, y, selectedBlockPos.z);
+        GX_Position3f32(selectedBlockPos.x + 0.01, y, selectedBlockPos.z + 0.01);
         GX_Color1x8(0);
-        GX_Position3f32(selectedBlockPos.x + 1, y, selectedBlockPos.z);
+        GX_Position3f32(selectedBlockPos.x + 0.99, y, selectedBlockPos.z + 0.01);
         GX_Color1x8(0);
-        GX_Position3f32(selectedBlockPos.x + 1, y, selectedBlockPos.z + 1);
+        GX_Position3f32(selectedBlockPos.x + 0.99, y, selectedBlockPos.z + 0.99);
         GX_Color1x8(0);
-        GX_Position3f32(selectedBlockPos.x, y, selectedBlockPos.z + 1);
+        GX_Position3f32(selectedBlockPos.x + 0.01, y, selectedBlockPos.z + 0.99);
         GX_Color1x8(0);
-        GX_Position3f32(selectedBlockPos.x, y, selectedBlockPos.z);
+        GX_Position3f32(selectedBlockPos.x + 0.01, y, selectedBlockPos.z + 0.01);
         GX_Color1x8(0);
     }
     else if (selectedBlockFace.z != 0)
     {
-        float z = selectedBlockPos.z + ((selectedBlockFace.z > 0) ? 1 : 0);
+        float z = selectedBlockPos.z + ((selectedBlockFace.z > 0) ? 1.01 : -0.01);
         
-        GX_Position3f32(selectedBlockPos.x, selectedBlockPos.y + 1, z);
+        GX_Position3f32(selectedBlockPos.x + 0.01, selectedBlockPos.y + 0.99, z);
         GX_Color1x8(0);
-        GX_Position3f32(selectedBlockPos.x + 1, selectedBlockPos.y + 1, z);
+        GX_Position3f32(selectedBlockPos.x + 0.99, selectedBlockPos.y + 0.99, z);
         GX_Color1x8(0);
-        GX_Position3f32(selectedBlockPos.x + 1, selectedBlockPos.y, z);
+        GX_Position3f32(selectedBlockPos.x + 0.99, selectedBlockPos.y + 0.01, z);
         GX_Color1x8(0);
-        GX_Position3f32(selectedBlockPos.x, selectedBlockPos.y, z);
+        GX_Position3f32(selectedBlockPos.x + 0.01, selectedBlockPos.y + 0.01, z);
         GX_Color1x8(0);
-        GX_Position3f32(selectedBlockPos.x, selectedBlockPos.y + 1, z);
+        GX_Position3f32(selectedBlockPos.x + 0.01, selectedBlockPos.y + 0.99, z);
         GX_Color1x8(0);
     }
     else
     {
-        assert(false);
+        assert(false);  //One of the faces must be selected
     }
     GX_End();
 }
