@@ -372,6 +372,22 @@ static void apply_motion_vector(struct Vec3f motion)
     }
 }
 
+static int analog_stick_clamp(int value, int deadzone)
+{
+    if (value > 0)
+    {
+        if (value > deadzone)
+            return value - deadzone;
+    }
+    else if (value < 0)
+    {
+        if (value < -deadzone)
+            return value + deadzone;
+    }
+    
+    return 0;
+}
+
 static void field_main(void)
 {
     struct Vec3f motion;
@@ -429,15 +445,11 @@ static void field_main(void)
             inventorySelection = 0;
     }
     
-    if (gCStickX > 10 || gCStickX < -10)
-        yaw += (float)gCStickX / 100.0;
-    if (gCStickY > 10 || gCStickY < -10)
-        pitch += (float)gCStickY / 100.0;
+    yaw += (float)analog_stick_clamp(gCStickX, 15) / 50.0;
+    pitch += (float)analog_stick_clamp(gCStickY, 15) / 50.0;
     
-    if (gAnalogStickX > 10 || gAnalogStickX < -10)
-        right = (float)gAnalogStickX / 1000.0;
-    if (gAnalogStickY > 10 || gAnalogStickY < -10)
-        forward = (float)gAnalogStickY / 1000.0;
+    right = (float)analog_stick_clamp(gAnalogStickX, 15) / 1000.0;
+    forward = (float)analog_stick_clamp(gAnalogStickY, 15) / 1000.0;
     
     //Wrap yaw to -180 to 180
     if (yaw > 180.0)
