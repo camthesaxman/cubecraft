@@ -6,7 +6,9 @@
 #include "font.h"
 
 static TPLFile fontTPL;
-GXTexObj fontTexture;
+static GXTexObj fontTexture;
+static int fontHeight;
+static int fontWidth;
 
 void text_load_textures(void)
 {
@@ -17,15 +19,14 @@ void text_load_textures(void)
     GX_InvalidateTexAll();
 }
 
-void text_draw_string(int x, int y, bool center, char *string)
+void text_set_font_size(int width, int height)
 {
-    int left = x;
-    int top = y;
-    int len = strlen(string);
-    
-    if (center)
-        left = left - len * TEX_GLYPH_WIDTH / 2;
-    
+    fontHeight = height;
+    fontWidth = width;
+}
+
+void text_init(void)
+{
     GX_LoadTexObj(&fontTexture, GX_TEXMAP0);
     GX_SetNumTevStages(1);
     GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
@@ -37,27 +38,35 @@ void text_draw_string(int x, int y, bool center, char *string)
     GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_U16, 0);
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
+}
+
+void text_draw_string(int x, int y, bool center, const char *string)
+{
+    int len = strlen(string);
+    
+    if (center)
+        x -= len * fontWidth / 2;
     
     GX_Begin(GX_QUADS, GX_VTXFMT0, len * 4);
     for (int i = 0; i < len; i++)
     {
         int glyph = string[i] - ' ';
         
-        GX_Position2u16(left, top);
+        GX_Position2u16(x, y);
         GX_TexCoord2u16(glyph, 0);
-        GX_Position2u16(left + TEX_GLYPH_WIDTH, top);
+        GX_Position2u16(x + fontWidth, y);
         GX_TexCoord2u16(glyph + 1, 0);
-        GX_Position2u16(left + TEX_GLYPH_WIDTH, top + TEX_GLYPH_HEIGHT);
+        GX_Position2u16(x + fontWidth, y + fontHeight);
         GX_TexCoord2u16(glyph + 1, 1);
-        GX_Position2u16(left, top + TEX_GLYPH_HEIGHT);
+        GX_Position2u16(x, y + fontHeight);
         GX_TexCoord2u16(glyph, 1);
         
-        left += 8;
+        x += fontWidth;
     }
     GX_End();
 }
 
-void text_draw_string_formatted(int x, int y, bool center, char *fmt, ...)
+void text_draw_string_formatted(int x, int y, bool center, const char *fmt, ...)
 {
     va_list args;
     size_t bufferSize = 2;

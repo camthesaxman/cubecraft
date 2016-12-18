@@ -36,30 +36,8 @@ static void draw_title_banner(void)
     int x = (gDisplayWidth - TITLE_BANNER_WIDTH) / 2;
     int y = 100;
     
-    GX_LoadTexObj(&titleTexture, GX_TEXMAP0);
-    GX_SetNumTevStages(1);
-    
-    GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
-    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
-    
-    GX_SetTexCoordScaleManually(GX_TEXCOORD0, GX_TRUE, 1, 1);
-    
-    GX_ClearVtxDesc();
-    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_U16, 0);
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
-    
-    GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-    GX_Position2u16(x, y);
-    GX_TexCoord2u16(0, 0);
-    GX_Position2u16(x + TITLE_BANNER_WIDTH, y);
-    GX_TexCoord2u16(TITLE_BANNER_WIDTH, 0);
-    GX_Position2u16(x + TITLE_BANNER_WIDTH, y + TITLE_BANNER_HEIGHT);
-    GX_TexCoord2u16(TITLE_BANNER_WIDTH, TITLE_BANNER_HEIGHT);
-    GX_Position2u16(x, y + TITLE_BANNER_HEIGHT);
-    GX_TexCoord2u16(0, TITLE_BANNER_HEIGHT);
-    GX_End();
+    drawing_set_fill_texture(&titleTexture, TITLE_BANNER_WIDTH, TITLE_BANNER_HEIGHT);
+    drawing_draw_textured_rect(x, y, TITLE_BANNER_WIDTH, TITLE_BANNER_HEIGHT);
 }
 
 static void main_menu_main(void)
@@ -102,8 +80,11 @@ static void title_screen_main(void)
 static void title_screen_draw(void)
 {
     draw_title_banner();
-    if (!(pressStartBlinkCounter & 0x10))
-        text_draw_string(gDisplayWidth / 2, 200, true, "Press Start");
+    if (!(pressStartBlinkCounter & 0x20))
+    {
+        text_init();
+        text_draw_string(gDisplayWidth / 2, 300, true, "Press Start");
+    }
     pressStartBlinkCounter++;
 }
 
@@ -111,6 +92,7 @@ void title_screen_init(void)
 {
     menu_init(&titleMenu);
     drawing_set_2d_mode();
+    text_set_font_size(16, 32);
     set_main_callback(title_screen_main);
     set_draw_callback(title_screen_draw);
     pressStartBlinkCounter = 0;

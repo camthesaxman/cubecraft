@@ -522,6 +522,8 @@ static void field_draw(void)
     inventory_draw();
     if (showDebugInfo)
     {
+        text_set_font_size(8, 16);
+        text_init();
         text_draw_string_formatted(50, 50, false, "Position: (%.2f, %.2f, %.2f), Chunk: (%i, %i)",
                                                   playerPosition.x, playerPosition.y, playerPosition.z, chunk->x, chunk->z);
         text_draw_string_formatted(50, 66, false, "Camera angle: (%.2f, %.2f)",
@@ -564,6 +566,7 @@ void field_init(void)
     inventory_init();
     showDebugInfo = false;
     
+    text_set_font_size(8, 16);
     set_main_callback(field_main);
     set_draw_callback(field_draw);
 }

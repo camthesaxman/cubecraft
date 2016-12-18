@@ -1,4 +1,5 @@
 #include "global.h"
+#include "drawing.h"
 #include "inventory.h"
 #include "text.h"
 #include "world.h"
@@ -11,9 +12,6 @@
 #define INVENTORY_TILE_HEIGHT 64
 #define ITEM_ICON_WIDTH 32
 #define ITEM_ICON_HEIGHT 32
-
-#define INVENTORY_BKGND_COLOR 20, 20, 20
-#define INVENTORY_SEL_COLOR 255, 255, 255
 
 //Item icon IDs
 enum
@@ -59,10 +57,6 @@ static int get_nonempty_slots_count(void)
 
 void inventory_draw(void)
 {
-    //TODO: Get color indexing to work
-    //u8 inventoryBackgroundColor[] ATTRIBUTE_ALIGN(32) = {INVENTORY_BKGND_COLOR};
-    //u8 inventorySelectionColor[] ATTRIBUTE_ALIGN(32) = {INVENTORY_SEL_COLOR};
-    
     int width = INVENTORY_TILE_WIDTH * NUM_ITEM_SLOTS;
     int height = INVENTORY_TILE_HEIGHT;
     int x = (gDisplayWidth - width) / 2;
@@ -72,74 +66,21 @@ void inventory_draw(void)
     int iconOffsetX = (INVENTORY_TILE_WIDTH - ITEM_ICON_WIDTH) / 2;
     int iconOffsetY = (INVENTORY_TILE_HEIGHT - ITEM_ICON_HEIGHT) / 2;
     
-    
     //Draw background
-    
-    GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
-    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-    
-    GX_ClearVtxDesc();
-    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
-    //GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX8);
-    GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_U16, 0);
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGB, GX_RGB8, 0);
-    //GX_SetArray(GX_VA_CLR0, inventoryBackgroundColor, 3 * sizeof(u8));
-    
-    GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-    GX_Position2u16(x, y);
-    //GX_Color1x8(0);
-    GX_Color3u8(INVENTORY_BKGND_COLOR);
-    GX_Position2u16(x + width, y);
-    //GX_Color1x8(0);
-    GX_Color3u8(INVENTORY_BKGND_COLOR);
-    GX_Position2u16(x + width, y + height);
-    //GX_Color1x8(0);
-    GX_Color3u8(INVENTORY_BKGND_COLOR);
-    GX_Position2u16(x, y + height);
-    //GX_Color1x8(0);
-    GX_Color3u8(INVENTORY_BKGND_COLOR);
-    GX_End();
-    
-    
-    //Draw selection rectangle
-    
-    //GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX8);
-    //GX_SetArray(GX_VA_CLR0, inventorySelectionColor, 3 * sizeof(u8));
-    
-    GX_Begin(GX_LINESTRIP, GX_VTXFMT0, 5);
-    GX_Position2u16(selectionRectX, selectionRectY);
-    //GX_Color1x8(0);
-    GX_Color3u8(INVENTORY_SEL_COLOR);
-    GX_Position2u16(selectionRectX + INVENTORY_TILE_WIDTH, selectionRectY);
-    //GX_Color1x8(0);
-    GX_Color3u8(INVENTORY_SEL_COLOR);
-    GX_Position2u16(selectionRectX + INVENTORY_TILE_WIDTH, selectionRectY + INVENTORY_TILE_HEIGHT);
-    //GX_Color1x8(0);
-    GX_Color3u8(INVENTORY_SEL_COLOR);
-    GX_Position2u16(selectionRectX, selectionRectY + INVENTORY_TILE_HEIGHT);
-    //GX_Color1x8(0);
-    GX_Color3u8(INVENTORY_SEL_COLOR);
-    GX_Position2u16(selectionRectX, selectionRectY);
-    //GX_Color1x8(0);
-    GX_Color3u8(INVENTORY_SEL_COLOR);
-    GX_End();
-    
+    drawing_set_fill_color(20, 20, 20, 180);
+    drawing_draw_solid_rect(x, y, width, height);
     
     //Draw item icons
-
     GX_LoadTexObj(&itemIconsTexture, GX_TEXMAP0);
     GX_SetNumTevStages(1);
     GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
     GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
     GX_SetTexCoordScaleManually(GX_TEXCOORD0, GX_TRUE, ITEM_ICON_WIDTH, ITEM_ICON_HEIGHT);
-    
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
     GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_U16, 0);
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
-    
     GX_Begin(GX_QUADS, GX_VTXFMT0, get_nonempty_slots_count() * 4);
     for (int i = 0; i < NUM_ITEM_SLOTS; i++)
     {
@@ -161,15 +102,19 @@ void inventory_draw(void)
     }
     GX_End();
     
-    
     //Draw item quantities
+    text_set_font_size(16, 32);
+    text_init();
     for (int i = 0; i < NUM_ITEM_SLOTS; i++)
     {
         if (inventory[i].count > 0)
-        {
             text_draw_string_formatted(x + i * INVENTORY_TILE_WIDTH, y, false, "%i", inventory[i].count);
-        }
     }
+    
+    //Draw selection rectangle
+    drawing_set_fill_color(255, 255, 255, 255);
+    drawing_draw_outline_rect(selectionRectX, selectionRectY, INVENTORY_TILE_WIDTH, INVENTORY_TILE_HEIGHT);
+    
 }
 
 void inventory_add_block(int type)
@@ -184,7 +129,7 @@ void inventory_add_block(int type)
         }
     }
     
-    //Check for an empty slot, then
+    //Check for an empty slot
     for (int i = 0; i < NUM_ITEM_SLOTS; i++)
     {
         if (inventory[i].count == 0)
