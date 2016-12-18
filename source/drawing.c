@@ -1,7 +1,7 @@
 #include "global.h"
 #include "drawing.h"
 
-static u8 fillColor[4] ATTRIBUTE_ALIGN(32);
+static u8 fillColor[4] ATTRIBUTE_ALIGN(32) = {255, 0, 0, 255};
 static int textureWidth;
 static int textureHeight;
 
