@@ -20,7 +20,7 @@ void drawing_set_3d_mode(void)
 {
     Mtx44 projectionMtx;
     
-    guPerspective(projectionMtx, 60, (float)gDisplayWidth / (float)gDisplayHeight, 0.5, 300.0);
+    guPerspective(projectionMtx, 60, (float)gDisplayWidth / (float)gDisplayHeight, 0.2, 300.0);
     GX_LoadProjectionMtx(projectionMtx, GX_PERSPECTIVE);
 }
 
