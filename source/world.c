@@ -141,6 +141,7 @@ static void generate_land(struct Chunk *chunk)
     int heightmap[CHUNK_WIDTH][CHUNK_WIDTH];
     unsigned int x = chunk->x * CHUNK_WIDTH;
     unsigned int z = chunk->z * CHUNK_WIDTH;
+    u16 randVal = 65535.0 * rand_hash_frac(x, z);
     int gameCubeX;
     int gameCubeY;
     int gameCubeZ;
@@ -192,8 +193,10 @@ static void generate_land(struct Chunk *chunk)
     for (int i = 0; i < MAX_TREES; i++)
     {
         //We want to keep things simple and avoid having the tree leaves overlap into neighboring chunks
-        x = 2 + (random(z) % (CHUNK_WIDTH - 4));
-        z = 2 + (random(x) % (CHUNK_WIDTH - 4));
+        randVal = random(randVal);
+        x = 2 + (randVal % (CHUNK_WIDTH - 4));
+        randVal = random(randVal);
+        z = 2 + (randVal % (CHUNK_WIDTH - 4));
         y = heightmap[x][z];
        
         //Trees should only grow on grass
@@ -202,11 +205,12 @@ static void generate_land(struct Chunk *chunk)
     }
     
     //Bury one secret Gamecube in each chunk
-    gameCubeX = random(x);
-    gameCubeY = random(gameCubeX);
-    gameCubeZ = random(gameCubeY);
-    gameCubeX %= CHUNK_WIDTH;
-    gameCubeZ %= CHUNK_WIDTH;
+    randVal = random(randVal);
+    gameCubeX = randVal % CHUNK_WIDTH;
+    randVal = random(randVal);
+    gameCubeY = randVal;
+    randVal = random(randVal);
+    gameCubeZ = randVal;
     gameCubeY %= heightmap[gameCubeX][gameCubeZ];
     chunk->blocks[gameCubeX][gameCubeY][gameCubeZ] = BLOCK_GAMECUBE;
 }
