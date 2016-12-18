@@ -533,6 +533,7 @@ static void field_draw(void)
         else
             text_draw_string(50, 82, false, "Selected block: none");
         text_draw_string_formatted(50, 98, false, "State: %s", get_state_text());
+        text_draw_string_formatted(50, 114, false, "FPS: %i", gFramesPerSecond);
     }
     draw_crosshair();
 }

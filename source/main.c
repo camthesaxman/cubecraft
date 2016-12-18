@@ -15,12 +15,16 @@ s8 gAnalogStickX;
 s8 gAnalogStickY;
 s8 gCStickX;
 s8 gCStickY;
+int gFramesPerSecond;
 
 static void (*mainCallback)(void) = NULL;
 static void (*drawCallback)(void) = NULL;
 
 static void *frameBuffers[2] = {NULL, NULL};
 static int frameBufferNum = 0;
+static u64 lastTime = 0;
+static u64 newTime = 0;
+static int frames = 0;
 
 static void setup_graphics(void)
 {
@@ -98,6 +102,7 @@ int main(void)
     //Start title screen
     title_screen_init();
     
+    lastTime = gettime();
     while (1)
     {
         read_input();
@@ -113,6 +118,15 @@ int main(void)
         VIDEO_Flush();
         VIDEO_WaitVSync();
         frameBufferNum ^= 1;  //Switch to other framebuffer
+        
+        frames++;
+        newTime = gettime();
+        if (ticks_to_secs(newTime - lastTime) > 0)
+        {
+            gFramesPerSecond = frames;
+            frames = 0;
+            lastTime = newTime;
+        }
     }
     return 0;
 }

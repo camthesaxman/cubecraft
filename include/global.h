@@ -13,6 +13,7 @@
 //DevKitPro headers
 #include <gccore.h>
 #include <wiiuse/wpad.h>
+#include <ogc/lwp_watchdog.h>
 
 #include "debug.h"
 
@@ -26,5 +27,6 @@ extern s8 gAnalogStickX;
 extern s8 gAnalogStickY;
 extern s8 gCStickX;
 extern s8 gCStickY;
+extern int gFramesPerSecond;
 
 #endif //GUARD_GLOBAL_H
