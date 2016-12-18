@@ -83,8 +83,10 @@ static void build_chunk_display_list(struct Chunk *chunk);
 //==================================================
 
 #define WAVELENGTH 32
-#define LAND_HEIGHT_MIN 20
-#define LAND_HEIGHT_MAX 36
+#define LAND_HEIGHT_MIN 51
+#define LAND_HEIGHT_MAX 67
+#define STONE_LEVEL 53
+#define SAND_LEVEL 56
 #define MAX_TREES 4
 
 static u16 random(u16 a)
@@ -175,9 +177,9 @@ static void generate_land(struct Chunk *chunk)
             assert(landHeight <= LAND_HEIGHT_MAX);
             for (y = 0; y < landHeight; y++)
             {
-                if (y < 22)
+                if (y < STONE_LEVEL)
                     chunk->blocks[x][y][z] = BLOCK_STONE;
-                else if (y < 25)
+                else if (y < SAND_LEVEL)
                     chunk->blocks[x][y][z] = BLOCK_SAND;
                 else if (y == landHeight - 1)
                     chunk->blocks[x][y][z] = BLOCK_GRASS;
