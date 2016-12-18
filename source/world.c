@@ -5,7 +5,7 @@
 #include "blocks_tpl.h"
 #include "blocks.h"
 
-#define CHUNK_RENDER_RANGE 3
+#define CHUNK_RENDER_RANGE 10
 #define CHUNK_TABLE_WIDTH 16  //must be a power of two and larger than the render range
 #define CHUNK_TABLE_CAPACITY (CHUNK_TABLE_WIDTH * CHUNK_TABLE_WIDTH)
 
