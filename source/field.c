@@ -51,6 +51,7 @@ static int state;
 static bool selectedBlockActive;
 static struct Vec3i selectedBlockPos;
 static struct Vec3i selectedBlockFace;
+static bool showDebugInfo;
 
 static struct MenuItem pauseMenuItems[] = {
     {"Continue"},
@@ -379,6 +380,7 @@ static void field_main(void)
     
     if (gControllerPressedKeys & PAD_BUTTON_START)
         open_pause_menu();
+    
     if (state == STANDING)
     {
         assert(yVelocity == 0.0);
@@ -388,6 +390,7 @@ static void field_main(void)
             yVelocity = 0.18;
         }
     }
+    
     if (gControllerPressedKeys & PAD_BUTTON_B)
     {
         if (selectedBlockActive)
@@ -409,6 +412,10 @@ static void field_main(void)
             inventory[inventorySelection].count--;
         }
     }
+    
+    if (gControllerPressedKeys & PAD_TRIGGER_Z)
+        showDebugInfo = !showDebugInfo;
+        
     if (gControllerPressedKeys & PAD_BUTTON_LEFT)
     {
         inventorySelection--;
@@ -421,10 +428,12 @@ static void field_main(void)
         if (inventorySelection == NUM_ITEM_SLOTS)
             inventorySelection = 0;
     }
+    
     if (gCStickX > 10 || gCStickX < -10)
         yaw += (float)gCStickX / 100.0;
     if (gCStickY > 10 || gCStickY < -10)
         pitch += (float)gCStickY / 100.0;
+    
     if (gAnalogStickX > 10 || gAnalogStickX < -10)
         right = (float)gAnalogStickX / 1000.0;
     if (gAnalogStickY > 10 || gAnalogStickY < -10)
@@ -435,6 +444,7 @@ static void field_main(void)
         yaw -= 360.0;
     else if (yaw < -180.0)
         yaw += 360.0;
+    
     //Restrict pitch range to -90 to 90
     if (pitch > 90.0)
         pitch = 90.0;
@@ -510,15 +520,18 @@ static void field_draw(void)
         draw_block_selection();
     drawing_set_2d_mode();
     inventory_draw();
-    text_draw_string_formatted(50, 50, false, "Position: (%.2f, %.2f, %.2f), Chunk: (%i, %i)",
-                                              playerPosition.x, playerPosition.y, playerPosition.z, chunk->x, chunk->z);
-    text_draw_string_formatted(50, 66, false, "Camera angle: (%.2f, %.2f)",
-                                              yaw, pitch);
-    if (selectedBlockActive)
-        text_draw_string_formatted(50, 82, false, "Selected block: (%i, %i, %i)", selectedBlockPos.x, selectedBlockPos.y, selectedBlockPos.z);
-    else
-        text_draw_string(50, 82, false, "Selected block: none");
-    text_draw_string_formatted(50, 98, false, "State: %s", get_state_text());
+    if (showDebugInfo)
+    {
+        text_draw_string_formatted(50, 50, false, "Position: (%.2f, %.2f, %.2f), Chunk: (%i, %i)",
+                                                  playerPosition.x, playerPosition.y, playerPosition.z, chunk->x, chunk->z);
+        text_draw_string_formatted(50, 66, false, "Camera angle: (%.2f, %.2f)",
+                                                  yaw, pitch);
+        if (selectedBlockActive)
+            text_draw_string_formatted(50, 82, false, "Selected block: (%i, %i, %i)", selectedBlockPos.x, selectedBlockPos.y, selectedBlockPos.z);
+        else
+            text_draw_string(50, 82, false, "Selected block: none");
+        text_draw_string_formatted(50, 98, false, "State: %s", get_state_text());
+    }
     draw_crosshair();
 }
 
@@ -549,6 +562,7 @@ void field_init(void)
     yVelocity = 0.0;
     selectedBlockActive = false;
     inventory_init();
+    showDebugInfo = false;
     
     set_main_callback(field_main);
     set_draw_callback(field_draw);
