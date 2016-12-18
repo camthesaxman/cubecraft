@@ -317,7 +317,6 @@ int world_get_block_at(float x, float y, float z)
 void world_set_block(int x, int y, int z, int type)
 {
     struct Chunk *chunk = world_get_chunk_containing(x, z);
-    
     int blockX = world_to_block_coord(x);
     int blockY = y;
     int blockZ = world_to_block_coord(z);
@@ -325,6 +324,36 @@ void world_set_block(int x, int y, int z, int type)
     chunk->blocks[blockX][blockY][blockZ] = type;
     free(chunk->dispList);
     build_chunk_display_list(chunk);
+    
+    //Patch up any leftover or newly exposed faces on chunk borders
+    if (blockX == 0)
+    {
+        struct Chunk *neighborChunk = world_get_chunk(chunk->x - 1, chunk->z);
+        
+        free(neighborChunk->dispList);
+        build_chunk_display_list(neighborChunk);
+    }
+    else if (blockX == CHUNK_WIDTH - 1)
+    {
+        struct Chunk *neighborChunk = world_get_chunk(chunk->x + 1, chunk->z);
+        
+        free(neighborChunk->dispList);
+        build_chunk_display_list(neighborChunk);
+    }
+    if (blockZ == 0)
+    {
+        struct Chunk *neighborChunk = world_get_chunk(chunk->x, chunk->z - 1);
+        
+        free(neighborChunk->dispList);
+        build_chunk_display_list(neighborChunk);
+    }
+    else if (blockZ == CHUNK_WIDTH - 1)
+    {
+        struct Chunk *neighborChunk = world_get_chunk(chunk->x, chunk->z + 1);
+        
+        free(neighborChunk->dispList);
+        build_chunk_display_list(neighborChunk);
+    }
 }
 
 //==================================================
