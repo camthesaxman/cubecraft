@@ -536,16 +536,16 @@ static void field_draw(void)
     {
         text_set_font_size(8, 16);
         text_init();
-        text_draw_string_formatted(50, 50, false, "Position: (%.2f, %.2f, %.2f), Chunk: (%i, %i)",
+        text_draw_string_formatted(50, 50, 0, "Position: (%.2f, %.2f, %.2f), Chunk: (%i, %i)",
                                                   playerPosition.x, playerPosition.y, playerPosition.z, chunk->x, chunk->z);
-        text_draw_string_formatted(50, 66, false, "Camera angle: (%.2f, %.2f)",
+        text_draw_string_formatted(50, 66, 0, "Camera angle: (%.2f, %.2f)",
                                                   yaw, pitch);
         if (selectedBlockActive)
-            text_draw_string_formatted(50, 82, false, "Selected block: (%i, %i, %i)", selectedBlockPos.x, selectedBlockPos.y, selectedBlockPos.z);
+            text_draw_string_formatted(50, 82, 0, "Selected block: (%i, %i, %i)", selectedBlockPos.x, selectedBlockPos.y, selectedBlockPos.z);
         else
-            text_draw_string(50, 82, false, "Selected block: none");
-        text_draw_string_formatted(50, 98, false, "State: %s", get_state_text());
-        text_draw_string_formatted(50, 114, false, "FPS: %i", gFramesPerSecond);
+            text_draw_string(50, 82, 0, "Selected block: none");
+        text_draw_string_formatted(50, 98, 0, "State: %s", get_state_text());
+        text_draw_string_formatted(50, 114, 0, "FPS: %i", gFramesPerSecond);
     }
     draw_crosshair();
 }

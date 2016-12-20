@@ -108,7 +108,7 @@ void inventory_draw(void)
     for (int i = 0; i < NUM_ITEM_SLOTS; i++)
     {
         if (inventory[i].count > 0)
-            text_draw_string_formatted(x + i * INVENTORY_TILE_WIDTH, y, false, "%i", inventory[i].count);
+            text_draw_string_formatted(x + i * INVENTORY_TILE_WIDTH, y, 0, "%i", inventory[i].count);
     }
     
     //Draw selection rectangle

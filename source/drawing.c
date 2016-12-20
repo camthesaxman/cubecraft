@@ -68,6 +68,16 @@ void drawing_draw_textured_rect(int x, int y, int width, int height)
     GX_End();
 }
 
+void drawing_draw_line(int x1, int y1, int x2, int y2)
+{
+    GX_Begin(GX_LINES, GX_VTXFMT0, 2);
+    GX_Position2u16(x1, y1);
+    GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
+    GX_Position2u16(x2, y2);
+    GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
+    GX_End();
+}
+
 void drawing_set_fill_color(u8 r, u8 g, u8 b, u8 a)
 {
     fillColor[0] = r;

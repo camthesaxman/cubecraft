@@ -5,6 +5,9 @@
 #include "font_tpl.h"
 #include "font.h"
 
+#define TEXT_GLYPH_WIDTH 8
+#define TEXT_GLYPH_HEIGHT 16
+
 static TPLFile fontTPL;
 static GXTexObj fontTexture;
 static int fontHeight;
@@ -31,7 +34,7 @@ void text_init(void)
     GX_SetNumTevStages(1);
     GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
     GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
-    GX_SetTexCoordScaleManually(GX_TEXCOORD0, GX_TRUE, TEX_GLYPH_WIDTH, TEX_GLYPH_HEIGHT);
+    GX_SetTexCoordScaleManually(GX_TEXCOORD0, GX_TRUE, TEXT_GLYPH_WIDTH, TEXT_GLYPH_HEIGHT);
     
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
@@ -40,12 +43,14 @@ void text_init(void)
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
 }
 
-void text_draw_string(int x, int y, bool center, const char *string)
+void text_draw_string(int x, int y, int alignment, const char *string)
 {
     int len = strlen(string);
     
-    if (center)
+    if (alignment & TEXT_HCENTER)
         x -= len * fontWidth / 2;
+    if (alignment & TEXT_VCENTER)
+        y -= fontHeight / 2;
     
     GX_Begin(GX_QUADS, GX_VTXFMT0, len * 4);
     for (int i = 0; i < len; i++)
@@ -66,7 +71,7 @@ void text_draw_string(int x, int y, bool center, const char *string)
     GX_End();
 }
 
-void text_draw_string_formatted(int x, int y, bool center, const char *fmt, ...)
+void text_draw_string_formatted(int x, int y, int alignment, const char *fmt, ...)
 {
     va_list args;
     size_t bufferSize = 2;
@@ -83,6 +88,6 @@ void text_draw_string_formatted(int x, int y, bool center, const char *fmt, ...)
         vsnprintf(buffer, requiredBufSize, fmt, args);
         va_end(args);
     }
-    text_draw_string(x, y, center, buffer);
+    text_draw_string(x, y, alignment, buffer);
     free(buffer);
 }
