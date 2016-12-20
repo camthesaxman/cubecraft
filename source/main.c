@@ -1,4 +1,5 @@
 #include "global.h"
+#include "file.h"
 #include "inventory.h"
 #include "main.h"
 #include "text.h"
@@ -92,6 +93,9 @@ int main(void)
 {
     PAD_Init();
     setup_graphics();
+    
+    //Initialize file system
+    file_init();
     
     //Load textures
     title_screen_load_textures();

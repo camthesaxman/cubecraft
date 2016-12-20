@@ -215,6 +215,7 @@ int keyboard_process_input(void)
         analogStickHeldY = false;
     }
     
+    result = 0;
     if (gControllerPressedKeys & PAD_BUTTON_A)
     {
         struct KeyboardKey *key = &keyboard[selectedKeyY].keys[selectedKeyX];
@@ -255,7 +256,6 @@ int keyboard_process_input(void)
     }
     else if (analogStickDirY > 0 || (gControllerPressedKeys & PAD_BUTTON_UP))
     {
-        puts("asdf");
         selectedKeyY--;
         if (selectedKeyY == -1)
             selectedKeyY = ARRAY_LENGTH(keyboard) - 1;
@@ -263,7 +263,6 @@ int keyboard_process_input(void)
     }
     else if (analogStickDirY < 0 || (gControllerPressedKeys & PAD_BUTTON_DOWN))
     {
-        puts("foo");
         selectedKeyY++;
         if (selectedKeyY == ARRAY_LENGTH(keyboard))
             selectedKeyY = 0;

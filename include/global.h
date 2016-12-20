@@ -11,9 +11,12 @@
 #include <time.h>
 
 //DevKitPro headers
+#include <dirent.h>
+#include <fat.h>
 #include <gccore.h>
-#include <wiiuse/wpad.h>
 #include <ogc/lwp_watchdog.h>
+#include <sys/stat.h>
+#include <wiiuse/wpad.h>
 
 #include "debug.h"
 

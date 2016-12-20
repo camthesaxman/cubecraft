@@ -57,6 +57,8 @@ static struct Rectangle itemsRect;
 static int selection;
 static bool analogStickHeld;
 
+static const char *msgBoxText;
+
 void menu_init(const struct Menu *menu)
 {
     int len;
@@ -110,9 +112,10 @@ int menu_process_input(void)
     }
     
     if (gControllerPressedKeys & PAD_BUTTON_A)
-    {
         return selection;
-    }
+    else if (gControllerPressedKeys & PAD_BUTTON_B)
+        return MENU_CANCEL;
+    
     else if (analogStickDir > 0 || (gControllerPressedKeys & PAD_BUTTON_UP))
     {
         selection--;
@@ -125,14 +128,14 @@ int menu_process_input(void)
         if (selection > currentMenu->nItems - 1)
             selection = 0;
     }
-    return -1;
+    return MENU_NORESULT;
 }
 
 void menu_draw(void)
 {
     struct Rectangle selectionRect;
     
-    drawing_set_fill_color(0, 0, 0, 80);
+    drawing_set_fill_color(0, 0, 0, 100);
     drawing_draw_solid_rect(titleRect.x, titleRect.y, titleRect.width, titleRect.height);
     drawing_draw_solid_rect(itemsRect.x, itemsRect.y, itemsRect.width, itemsRect.height);
     
@@ -149,4 +152,31 @@ void menu_draw(void)
     
     drawing_set_fill_color(255, 255, 255, 255);
     drawing_draw_outline_rect(selectionRect.x, selectionRect.y, selectionRect.width, selectionRect.height);
+}
+
+void menu_msgbox_init(const char *text)
+{
+    msgBoxText = text;
+}
+
+bool menu_msgbox_process_input(void)
+{
+    if (gControllerPressedKeys & PAD_BUTTON_A)
+        return true;
+    else
+        return false;
+}
+
+void menu_msgbox_draw(void)
+{
+    int width = 300;
+    int height = 200;
+    int x = (gDisplayWidth - width) / 2;
+    int y = (gDisplayHeight - height) / 2;
+    
+    drawing_set_fill_color(0, 0, 0, 150);
+    drawing_draw_solid_rect(x, y, width, height);
+    text_init();
+    text_set_font_size(16, 32);
+    text_draw_string(gDisplayWidth / 2, gDisplayHeight / 2, TEXT_HCENTER | TEXT_VCENTER, msgBoxText);
 }

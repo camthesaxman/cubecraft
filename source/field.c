@@ -71,13 +71,25 @@ static void field_draw(void);
 // Pause Menu
 //==================================================
 
+static void exit_pause_menu(void)
+{
+    set_main_callback(field_main);
+    set_draw_callback(field_draw);
+}
+
 static void pause_menu_main(void)
 {
+    if (gControllerPressedKeys & PAD_BUTTON_START)
+    {
+        exit_pause_menu();
+        return;
+    }
+    
     switch (menu_process_input())
     {
         case 0: //Continue
-            set_main_callback(field_main);
-            set_draw_callback(field_draw);
+        case MENU_CANCEL:
+            exit_pause_menu();
             break;
         case 1: //Quit
             world_close();

@@ -30,6 +30,22 @@ struct Chunk
     u8 blocks[CHUNK_WIDTH][CHUNK_HEIGHT][CHUNK_WIDTH];  //blocks[x][y][z]
 };
 
+struct BlockModification
+{
+    int x;
+    int y;
+    int z;
+    int type;
+};
+
+struct ChunkModification
+{
+    int x;
+    int z;
+    struct BlockModification *modifiedBlocks;
+    int modifiedBlocksCount;
+};
+
 void world_init(void);
 void world_load_textures(void);
 void world_close(void);

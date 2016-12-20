@@ -74,6 +74,7 @@ static GXTexObj blocksTexture;
 
 static u16 worldSeed = 54321;
 static struct Chunk chunkTable[CHUNK_TABLE_WIDTH][CHUNK_TABLE_WIDTH];
+static struct ChunkModification *chunkModifications;
 
 static void load_chunk_changes(struct Chunk *chunk);
 static void build_chunk_display_list(struct Chunk *chunk);
@@ -611,6 +612,7 @@ void world_render_chunks_at(float x, float z)
 void world_init(void)
 {
     memset(chunkTable, 0, sizeof(chunkTable));
+    chunkModifications = NULL;
 }
 
 void world_load_textures(void)
