@@ -96,7 +96,7 @@ int menu_process_input(void)
 {
     int analogStickDir = 0;
     
-    if (gAnalogStickY > 15 || gAnalogStickY < -15)
+    if (gAnalogStickY > 50 || gAnalogStickY < -50)
     {
         if (!analogStickHeld)
         {

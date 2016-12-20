@@ -189,7 +189,7 @@ int keyboard_process_input(void)
     int analogStickDirX = 0;
     int analogStickDirY = 0;
     
-    if (gAnalogStickX > 15 || gAnalogStickX < -15)
+    if (gAnalogStickX > 50 || gAnalogStickX < -50)
     {
         if (!analogStickHeldX)
         {
@@ -202,7 +202,7 @@ int keyboard_process_input(void)
         analogStickHeldX = false;
     }
     
-    if (gAnalogStickY > 15 || gAnalogStickY < -15)
+    if (gAnalogStickY > 50 || gAnalogStickY < -50)
     {
         if (!analogStickHeldY)
         {
