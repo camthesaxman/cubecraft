@@ -1,4 +1,5 @@
 #include "global.h"
+#include "file.h"
 #include "world.h"
 
 //Blocks TPL data
@@ -43,11 +44,11 @@ enum
 
 static const u8 blockTiles[][6] =
 {
-	[BLOCK_STONE]     = {TILE_STONE,      TILE_STONE,      TILE_STONE,    TILE_STONE,     TILE_STONE,      TILE_STONE},
-	[BLOCK_SAND]      = {TILE_SAND,       TILE_SAND,       TILE_SAND,     TILE_SAND,      TILE_SAND,       TILE_SAND},
-	[BLOCK_DIRT]      = {TILE_DIRT,       TILE_DIRT,       TILE_DIRT,     TILE_DIRT,      TILE_DIRT,       TILE_DIRT},
-	[BLOCK_GRASS]     = {TILE_GRASS_SIDE, TILE_GRASS_SIDE, TILE_GRASS,    TILE_DIRT,      TILE_GRASS_SIDE, TILE_GRASS_SIDE},
-	[BLOCK_WOOD]      = {TILE_WOOD,       TILE_WOOD,       TILE_WOOD,     TILE_WOOD,      TILE_WOOD,       TILE_WOOD},
+    [BLOCK_STONE]     = {TILE_STONE,      TILE_STONE,      TILE_STONE,    TILE_STONE,     TILE_STONE,      TILE_STONE},
+    [BLOCK_SAND]      = {TILE_SAND,       TILE_SAND,       TILE_SAND,     TILE_SAND,      TILE_SAND,       TILE_SAND},
+    [BLOCK_DIRT]      = {TILE_DIRT,       TILE_DIRT,       TILE_DIRT,     TILE_DIRT,      TILE_DIRT,       TILE_DIRT},
+    [BLOCK_GRASS]     = {TILE_GRASS_SIDE, TILE_GRASS_SIDE, TILE_GRASS,    TILE_DIRT,      TILE_GRASS_SIDE, TILE_GRASS_SIDE},
+    [BLOCK_WOOD]      = {TILE_WOOD,       TILE_WOOD,       TILE_WOOD,     TILE_WOOD,      TILE_WOOD,       TILE_WOOD},
     [BLOCK_TREE]      = {TILE_TREE_SIDE,  TILE_TREE_SIDE,  TILE_TREE_TOP, TILE_TREE_TOP,  TILE_TREE_SIDE,  TILE_TREE_SIDE},
     [BLOCK_LEAVES]    = {TILE_LEAVES,     TILE_LEAVES,     TILE_LEAVES,   TILE_LEAVES,    TILE_LEAVES,     TILE_LEAVES},
     [BLOCK_GAMECUBE]  = {TILE_GC_SIDE,    TILE_GC_SIDE,    TILE_GC_TOP,   TILE_GC_BOTTOM, TILE_GC_FRONT,   TILE_GC_BACK}
@@ -72,9 +73,9 @@ static int facesListCapacity;
 static TPLFile blocksTPL;
 static GXTexObj blocksTexture;
 
+struct SaveFile *currentSave;
 static u16 worldSeed = 54321;
 static struct Chunk chunkTable[CHUNK_TABLE_WIDTH][CHUNK_TABLE_WIDTH];
-static struct ChunkModification *chunkModifications;
 
 static void load_chunk_changes(struct Chunk *chunk);
 static void build_chunk_display_list(struct Chunk *chunk);
@@ -239,7 +240,39 @@ static int wrap_table_index(int index)
 
 static void load_chunk_changes(struct Chunk *chunk)
 {
-    //TODO: Implement
+    struct ChunkModification *mod;
+    
+    chunk->modificationIndex = -1;
+    
+    //Search the save file for modifications to this chunk
+    for (int i = 0; i < currentSave->modifiedChunksCount; i++)
+    {
+        if (currentSave->modifiedChunks[i].x == chunk->x
+         && currentSave->modifiedChunks[i].z == chunk->z)
+        {
+            chunk->modificationIndex = i;
+            break;
+        }
+    }
+    
+    if (chunk->modificationIndex == -1)
+        return;  //Chunk was not modified
+    
+    file_log("load_chunk_changes(): applying chunk changes for chunk %i, %i", chunk->x, chunk->z);
+    mod = &currentSave->modifiedChunks[chunk->modificationIndex];
+    for (int i = 0; i < mod->modifiedBlocksCount; i++)
+    {
+        struct BlockModification *blockMod = &mod->modifiedBlocks[i];
+        
+        //file_log("load_chunk_changes(): changing block %i, %i, %i", blockMod->x, blockMod->y, blockMod->z);
+        assert(blockMod->x >= 0);
+        assert(blockMod->x < CHUNK_WIDTH);
+        assert(blockMod->y >= 0);
+        assert(blockMod->y < CHUNK_HEIGHT);
+        assert(blockMod->z >= 0);
+        assert(blockMod->z < CHUNK_WIDTH);
+        chunk->blocks[blockMod->x][blockMod->y][blockMod->z] = blockMod->type;
+    }
 }
 
 static void create_chunk(struct Chunk *chunk, int x, int z)
@@ -317,6 +350,50 @@ int world_get_block_at(float x, float y, float z)
     return chunk->blocks[blockX][blockY][blockZ];
 }
 
+static void add_block_modification(struct Chunk *chunk, int x, int y, int z, int type)
+{
+    int i;
+    struct ChunkModification *mod;
+    
+    //Ensure this chunk is in the list
+    for (i = 0; i < currentSave->modifiedChunksCount; i++)
+    {
+        if (currentSave->modifiedChunks[i].x == chunk->x
+         && currentSave->modifiedChunks[i].z == chunk->z)
+            break;
+    }
+    
+    if (i == currentSave->modifiedChunksCount)
+    {
+        //Doesn't exist. Let's create it
+        assert(chunk->modificationIndex == -1);
+        chunk->modificationIndex = i;
+        currentSave->modifiedChunks = realloc(currentSave->modifiedChunks,
+                                              (currentSave->modifiedChunksCount + 1) * sizeof(struct ChunkModification));
+        currentSave->modifiedChunks[i].x = chunk->x;
+        currentSave->modifiedChunks[i].z = chunk->z;
+        currentSave->modifiedChunks[i].modifiedBlocks = NULL;
+        currentSave->modifiedChunks[i].modifiedBlocksCount = 0;
+        currentSave->modifiedChunksCount++;
+    }
+    
+    //Add the block modification
+    assert(chunk->modificationIndex != -1);
+    mod = &currentSave->modifiedChunks[chunk->modificationIndex];
+    
+    mod->modifiedBlocks = realloc(mod->modifiedBlocks, (mod->modifiedBlocksCount + 1) * sizeof(struct BlockModification));
+    mod->modifiedBlocks[mod->modifiedBlocksCount].x = x;
+    mod->modifiedBlocks[mod->modifiedBlocksCount].y = y;
+    mod->modifiedBlocks[mod->modifiedBlocksCount].z = z;
+    mod->modifiedBlocks[mod->modifiedBlocksCount].type = type;
+    mod->modifiedBlocksCount++;
+    
+    file_log("add_block_modification(): added block %i, %i, %i",
+      mod->modifiedBlocks[mod->modifiedBlocksCount].x,
+      mod->modifiedBlocks[mod->modifiedBlocksCount].y,
+      mod->modifiedBlocks[mod->modifiedBlocksCount].z);
+}
+
 void world_set_block(int x, int y, int z, int type)
 {
     struct Chunk *chunk = world_get_chunk_containing(x, z);
@@ -357,6 +434,8 @@ void world_set_block(int x, int y, int z, int type)
         free(neighborChunk->dispList);
         build_chunk_display_list(neighborChunk);
     }
+    
+    add_block_modification(chunk, blockX, blockY, blockZ, type);
 }
 
 //==================================================
@@ -609,10 +688,17 @@ void world_render_chunks_at(float x, float z)
 // Setup Functions
 //==================================================
 
-void world_init(void)
+void world_init(struct SaveFile *save)
 {
+    currentSave = save;
+    assert(save->name != NULL);
     memset(chunkTable, 0, sizeof(chunkTable));
-    chunkModifications = NULL;
+    file_log("world_init(): %i chunk modifications", currentSave->modifiedChunksCount);
+    file_log("world_init(): list of modified chunks:");
+    for (int i = 0; i < currentSave->modifiedChunksCount; i++)
+    {
+        file_log("world_init():     %i, %i", currentSave->modifiedChunks[i].x, currentSave->modifiedChunks[i].z);
+    }
 }
 
 void world_load_textures(void)
@@ -626,6 +712,10 @@ void world_load_textures(void)
 
 void world_close(void)
 {
+    assert(currentSave->name != NULL);
+    file_log("world_close(): saving world '%s'", currentSave->name);
+    file_save_world(currentSave);
+    
     for (int i = 0; i < CHUNK_TABLE_WIDTH; i++)
     {
         for (int j = 0; j < CHUNK_TABLE_WIDTH; j++)

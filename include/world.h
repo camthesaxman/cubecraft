@@ -23,6 +23,7 @@ enum
 struct Chunk
 {
     bool active;
+    int modificationIndex;
     int x;
     int z;
     void *dispList;
@@ -46,7 +47,9 @@ struct ChunkModification
     int modifiedBlocksCount;
 };
 
-void world_init(void);
+struct SaveFile;
+
+void world_init(struct SaveFile *save);
 void world_load_textures(void);
 void world_close(void);
 struct Chunk *world_get_chunk(int x, int z);

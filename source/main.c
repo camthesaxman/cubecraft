@@ -106,6 +106,8 @@ int main(void)
     //Start title screen
     title_screen_init();
     
+    file_log("started");
+    
     lastTime = gettime();
     while (1)
     {

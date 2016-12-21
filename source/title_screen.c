@@ -7,10 +7,9 @@
 #include "menu.h"
 #include "text.h"
 #include "title_screen.h"
+#include "world.h"
 
 #define MAX_SAVE_FILES 5
-#define SAVENAME_MAX 16  //Maximum length of a file name (including the null terminator)
-#define SEED_MAX 16      //Maximum length of a seed string (including the null terminator)
 
 //Title TPL data
 #include "title_tpl.h"
@@ -81,6 +80,8 @@ static struct Menu eraseconfirmMenu = {
     ARRAY_LENGTH(eraseconfirmMenuItems),
 };
 
+static struct SaveFile saveFile;
+
 static void main_menu_init(void);
 static void files_menu_init(void);
 static void newgame_menu_init(void);
@@ -113,6 +114,7 @@ static void eraseconfirm_menu_main(void)
 
 static void eraseconfirm_menu_draw(void)
 {
+    draw_title_banner();
     menu_draw();
 }
 
@@ -121,7 +123,9 @@ static void startgame_menu_main(void)
     switch (menu_process_input())
     {
         case 0:  //Start!
-            field_init();
+            assert(strlen(saveFiles[fileNum]) > 0);
+            file_load_world(&saveFile, saveFiles[fileNum]);
+            field_init(&saveFile);
             break;
         case 1:  //Erase File
             menu_init(&eraseconfirmMenu);
@@ -137,6 +141,7 @@ static void startgame_menu_main(void)
 
 static void startgame_menu_draw(void)
 {
+    draw_title_banner();
     menu_draw();
 }
 
@@ -152,8 +157,6 @@ static void startgame_menu_init(int file)
 // New Game Menu
 //==================================================
 
-static char worldName[SAVENAME_MAX];
-static char worldSeed[SEED_MAX];
 static char nameKeyboardBuffer[SAVENAME_MAX];
 static char seedKeyboardBuffer[SEED_MAX];
 static bool msgBoxActive;  //Set whenever the "File already exists." box is shown
@@ -173,8 +176,6 @@ static bool check_if_already_exists(const char *name)
 
 static void name_kb_main(void)
 {
-    if (gControllerPressedKeys & PAD_BUTTON_START)
-        exit(0);
     if (msgBoxActive)
     {
         if (menu_msgbox_process_input())
@@ -193,7 +194,8 @@ static void name_kb_main(void)
             }
             else
             {
-                strcpy(worldName, nameKeyboardBuffer);
+                memset(saveFile.name, '\0', sizeof(saveFile.name));
+                strcpy(saveFile.name, nameKeyboardBuffer);
                 newgame_menu_init();
             }
             break;
@@ -205,28 +207,84 @@ static void name_kb_main(void)
 
 static void name_kb_draw(void)
 {
+    draw_title_banner();
     keyboard_draw();
     if (msgBoxActive)
         menu_msgbox_draw();
 }
 
+static void seed_kb_main(void)
+{
+    switch (keyboard_process_input())
+    {
+        case KEYBOARD_OK:
+            memset(saveFile.seed, '\0', sizeof(saveFile.seed));
+            strcpy(saveFile.seed, seedKeyboardBuffer);
+            newgame_menu_init();
+            break;
+        case KEYBOARD_CANCEL:
+            newgame_menu_init();
+            break;
+    }
+}
+
+static void seed_kb_draw(void)
+{
+    draw_title_banner();
+    keyboard_draw();
+}
+
 static void newgame_menu_main(void)
 {
-    if (gControllerPressedKeys & PAD_BUTTON_START)
-        exit(0);
+    if (msgBoxActive)
+    {
+        if (menu_msgbox_process_input())
+            msgBoxActive = false;
+        return;
+    }
+    
     switch (menu_process_input())
     {
         case 0:  //Enter Name
-            strcpy(nameKeyboardBuffer, worldName);
+            memset(nameKeyboardBuffer, '\0', sizeof(nameKeyboardBuffer));
+            strcpy(nameKeyboardBuffer, saveFile.name);
             keyboard_init("Enter World Name", nameKeyboardBuffer, ARRAY_LENGTH(nameKeyboardBuffer));
             set_main_callback(name_kb_main);
             set_draw_callback(name_kb_draw);
             break;
         case 1:  //Enter Seed
+            memset(seedKeyboardBuffer, '\0', sizeof(seedKeyboardBuffer));
+            strcpy(seedKeyboardBuffer, saveFile.seed);
+            keyboard_init("Enter World Seed", seedKeyboardBuffer, ARRAY_LENGTH(seedKeyboardBuffer));
+            set_main_callback(seed_kb_main);
+            set_draw_callback(seed_kb_draw);
             break;
         case 2:  //Start!
-            file_create(worldName);
-            field_init();
+            if (strlen(saveFile.name) == 0)
+            {
+                menu_msgbox_init("You must enter a name.");
+                msgBoxActive = true;
+                break;
+            }
+            if (strlen(saveFile.seed) == 0)
+            {
+                menu_msgbox_init("You must enter a seed.");
+                msgBoxActive = true;
+                break;
+            }
+            
+            //Initialize player's starting position
+            saveFile.spawnX = 5;
+            saveFile.spawnY = 200;
+            saveFile.spawnZ = 5;
+            saveFile.modifiedChunks = NULL;
+            saveFile.modifiedChunksCount = 0;
+            
+            file_save_world(&saveFile);
+            //file_load_world(&saveFile, saveFile.name);
+            assert(strlen(saveFile.name) > 0);
+            assert(strlen(saveFile.seed) > 0);
+            field_init(&saveFile);
             break;
         case MENU_CANCEL:
         case 3:  //Back
@@ -237,7 +295,10 @@ static void newgame_menu_main(void)
 
 static void newgame_menu_draw(void)
 {
+    draw_title_banner();
     menu_draw();
+    if (msgBoxActive)
+        menu_msgbox_draw();
 }
 
 static void newgame_menu_init(void)
@@ -267,8 +328,8 @@ static void files_menu_main(void)
     {
         if (saveFiles[item][0] == '\0')  //This is an empty save file slot
         {
-            memset(worldName, '\0', sizeof(worldName));
-            memset(worldSeed, '\0', sizeof(worldSeed));
+            memset(saveFile.name, '\0', sizeof(saveFile.name));
+            memset(saveFile.seed, '\0', sizeof(saveFile.seed));
             newgame_menu_init();
         }
         else
@@ -280,6 +341,7 @@ static void files_menu_main(void)
 
 static void files_menu_draw(void)
 {
+    draw_title_banner();
     menu_draw();
 }
 

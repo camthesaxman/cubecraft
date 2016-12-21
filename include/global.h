@@ -2,6 +2,7 @@
 #define GUARD_GLOBAL_H
 
 //Standard C headers
+#include <limits.h>
 #include <malloc.h>
 #include <math.h>
 #include <stdarg.h>

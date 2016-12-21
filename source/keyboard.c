@@ -129,7 +129,7 @@ static void draw_title(void)
 
 static void draw_text_entry(void)
 {
-    drawing_set_fill_color(0, 0, 0, 100);
+    drawing_set_fill_color(0, 0, 0, 150);
     drawing_draw_solid_rect(50, 100, 400, 16 + 2 * PADDING);
     text_init();
     text_draw_string(50 + PADDING, 100 + PADDING, 0, textBuffer);
@@ -141,7 +141,7 @@ static void draw_keys(void)
     int y;
     
     y = 150;
-    drawing_set_fill_color(0, 0, 0, 100);
+    drawing_set_fill_color(0, 0, 0, 150);
     for (int i = 0; i < ARRAY_LENGTH(keyboard); i++)
     {
         struct KeyboardKey *keys = keyboard[i].keys;
@@ -150,10 +150,10 @@ static void draw_keys(void)
         for (int j = 0; j < keyboard[i].nKeys; j++)
         {
             if (selectedKeyX == j && selectedKeyY == i)
-                drawing_set_fill_color(255, 255, 255, 100);
+                drawing_set_fill_color(255, 255, 255, 150);
             drawing_draw_solid_rect(x, y, keys[j].width, keys[j].height);
             if (selectedKeyX == j && selectedKeyY == i)
-                drawing_set_fill_color(0, 0, 0, 100);
+                drawing_set_fill_color(0, 0, 0, 150);
             x += keys[j].width + PADDING;
         }
         y += STANDARD_KEY_HEIGHT + PADDING;
@@ -241,6 +241,12 @@ int keyboard_process_input(void)
         textBufferPos = MAX(0, textBufferPos - 1);
         for (char *c = textBuffer + textBufferPos; *c != '\0'; c++)
             *c = *(c + 1);
+    }
+    else if (gControllerPressedKeys & PAD_BUTTON_START)
+    {
+        //Move to OK button
+        selectedKeyX = 0;
+        selectedKeyY = 4;
     }
     else if (analogStickDirX > 0 || (gControllerPressedKeys & PAD_BUTTON_RIGHT))
     {

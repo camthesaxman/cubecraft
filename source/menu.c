@@ -135,7 +135,7 @@ void menu_draw(void)
 {
     struct Rectangle selectionRect;
     
-    drawing_set_fill_color(0, 0, 0, 100);
+    drawing_set_fill_color(0, 0, 0, 150);
     drawing_draw_solid_rect(titleRect.x, titleRect.y, titleRect.width, titleRect.height);
     drawing_draw_solid_rect(itemsRect.x, itemsRect.y, itemsRect.width, itemsRect.height);
     
@@ -169,7 +169,7 @@ bool menu_msgbox_process_input(void)
 
 void menu_msgbox_draw(void)
 {
-    int width = 300;
+    int width = 400;
     int height = 200;
     int x = (gDisplayWidth - width) / 2;
     int y = (gDisplayHeight - height) / 2;
