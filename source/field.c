@@ -21,7 +21,7 @@
 #define EYE_LEVEL 1.5
 
 //How far the block selection can reach
-#define SELECT_RADIUS 5
+#define SELECT_RADIUS 4
 
 enum
 {
@@ -133,71 +133,71 @@ static void get_selected_block(void)
     };
     float eyeY = playerPosition.y + EYE_LEVEL;
     //coordinates of block we are currently at
-    int x = floorf(playerPosition.x);
-    int y = floorf(eyeY);
-    int z = floorf(playerPosition.z);
+    struct Vec3i pos = {
+        floorf(playerPosition.x),
+        floorf(eyeY),
+        floorf(playerPosition.z),
+    };
+    //How far we are from the eye coordinates
+    struct Vec3i radius = {0, 0, 0};
     //increment/decrement coordinates
-    int stepX = 0;
-    int stepY = 0;
-    int stepZ = 0;
+    struct Vec3i step = {0, 0, 0};
     //ray distance it takes to equal one unit in each direction
-    float tDeltaX = INFINITY;
-    float tDeltaY = INFINITY;
-    float tDeltaZ = INFINITY;
+    struct Vec3f tDelta = {INFINITY, INFINITY, INFINITY};
     //ray distance it takes to move to next block boundary in each direction
-    float tMaxX = INFINITY;
-    float tMaxY = INFINITY;
-    float tMaxZ = INFINITY;
+    struct Vec3f tMax = {INFINITY, INFINITY, INFINITY};
     
     if (direction.x > 0.0)
     {
-        stepX = 1;
-        tDeltaX = fabsf(1.0 / direction.x);
-        tMaxX = fabsf((floorf(playerPosition.x + 1.0) - playerPosition.x) / direction.x);
+        step.x = 1;
+        tDelta.x = fabsf(1.0 / direction.x);
+        tMax.x = fabsf((floorf(playerPosition.x + 1.0) - playerPosition.x) / direction.x);
     }
     else if (direction.x < 0.0)
     {
-        stepX = -1;
-        tDeltaX = fabsf(1.0 / direction.x);
-        tMaxX = fabsf((playerPosition.x - ceilf(playerPosition.x - 1.0)) / direction.x);
+        step.x = -1;
+        tDelta.x = fabsf(1.0 / direction.x);
+        tMax.x = fabsf((playerPosition.x - ceilf(playerPosition.x - 1.0)) / direction.x);
     }
     if (direction.y > 0.0)
     {        
-        stepY = 1;
-        tDeltaY = fabsf(1.0 / direction.y);
-        tMaxY = fabsf((floorf(eyeY + 1.0) - eyeY) / direction.y);
+        step.y = 1;
+        tDelta.y = fabsf(1.0 / direction.y);
+        tMax.y = fabsf((floorf(eyeY + 1.0) - eyeY) / direction.y);
     }
     else if (direction.y < -0.0)
     {
-        stepY = -1;
-        tDeltaY = fabsf(1.0 / direction.y);
-        tMaxY = fabsf((eyeY - ceilf(eyeY - 1.0)) / direction.y);
+        step.y = -1;
+        tDelta.y = fabsf(1.0 / direction.y);
+        tMax.y = fabsf((eyeY - ceilf(eyeY - 1.0)) / direction.y);
     }
     if (direction.z > 0.0)
     {
-        stepZ = 1;
-        tDeltaZ = fabsf(1.0 / direction.z);
-        tMaxZ = fabsf((floorf(playerPosition.z + 1.0) - playerPosition.z) / direction.z);
+        step.z = 1;
+        tDelta.z = fabsf(1.0 / direction.z);
+        tMax.z = fabsf((floorf(playerPosition.z + 1.0) - playerPosition.z) / direction.z);
     }
     else if (direction.z < -0.0)
     {
-        stepZ = -1;
-        tDeltaZ = fabsf(1.0 / direction.z);
-        tMaxZ = fabsf((playerPosition.z - ceilf(playerPosition.z - 1.0)) / direction.z);
+        step.z = -1;
+        tDelta.z = fabsf(1.0 / direction.z);
+        tMax.z = fabsf((playerPosition.z - ceilf(playerPosition.z - 1.0)) / direction.z);
     }
     
     selectedBlockActive = false;
     
-    for (int i = 0; i < SELECT_RADIUS; i++)
+    //for (int i = 0; i < SELECT_RADIUS; i++)
+    while (radius.x * radius.x + radius.y * radius.y + radius.z * radius.z < SELECT_RADIUS * SELECT_RADIUS)
     {
-        if (tMaxX < tMaxY)
+        if (tMax.x < tMax.y)
         {
-            if (tMaxX < tMaxZ)
+            if (tMax.x < tMax.z)
             {
                 //increment x
-                tMaxX += tDeltaX;
-                x += stepX;
-                selectedBlockFace.x = -stepX;
+                tMax.x += tDelta.x;
+                pos.x += step.x;
+                radius.x++;
+                selectedBlockFace.x = -step.x;
                 selectedBlockFace.y = 0;
                 selectedBlockFace.z = 0;
             }
@@ -208,32 +208,34 @@ static void get_selected_block(void)
         }
         else
         {
-            if (tMaxY < tMaxZ)
+            if (tMax.y < tMax.z)
             {
                 //increment y
-                tMaxY += tDeltaY;
-                y += stepY;
+                tMax.y += tDelta.y;
+                pos.y += step.y;
+                radius.y++;
                 selectedBlockFace.x = 0;
-                selectedBlockFace.y = -stepY;
+                selectedBlockFace.y = -step.y;
                 selectedBlockFace.z = 0;
             }
             else
             {
                 //increment z
               increment_z:
-                tMaxZ += tDeltaZ;
-                z += stepZ;
+                tMax.z += tDelta.z;
+                pos.z += step.z;
+                radius.z++;
                 selectedBlockFace.x = 0;
                 selectedBlockFace.y = 0;
-                selectedBlockFace.z = -stepZ;
+                selectedBlockFace.z = -step.z;
             }
         }
         
-        if (BLOCK_IS_SOLID(world_get_block_at(x, y, z)))
+        if (BLOCK_IS_SOLID(world_get_block_at(pos.x, pos.y, pos.z)))
         {
-            selectedBlockPos.x = x;
-            selectedBlockPos.y = y;
-            selectedBlockPos.z = z;
+            selectedBlockPos.x = pos.x;
+            selectedBlockPos.y = pos.y;
+            selectedBlockPos.z = pos.z;
             selectedBlockActive = true;
             return;
         }
