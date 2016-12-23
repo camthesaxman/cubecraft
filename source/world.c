@@ -387,11 +387,6 @@ static void add_block_modification(struct Chunk *chunk, int x, int y, int z, int
     mod->modifiedBlocks[mod->modifiedBlocksCount].z = z;
     mod->modifiedBlocks[mod->modifiedBlocksCount].type = type;
     mod->modifiedBlocksCount++;
-    
-    file_log("add_block_modification(): added block %i, %i, %i",
-      mod->modifiedBlocks[mod->modifiedBlocksCount].x,
-      mod->modifiedBlocks[mod->modifiedBlocksCount].y,
-      mod->modifiedBlocks[mod->modifiedBlocksCount].z);
 }
 
 void world_set_block(int x, int y, int z, int type)

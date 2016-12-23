@@ -148,8 +148,8 @@ void file_load_world(struct SaveFile *save, const char *name)
     size = file_size(file);
     fseek(file, 0, SEEK_SET);
     
-    buffer = malloc(1024);
-    memset(buffer, 0, 1024);
+    buffer = malloc(size);
+    memset(buffer, 0, size);
     ptr = buffer;
     fread(buffer, 1, size, file);
     
@@ -173,7 +173,6 @@ void file_load_world(struct SaveFile *save, const char *name)
     
     //Read modified chunk data
     save->modifiedChunksCount = deserialize_uint32_t(&ptr);
-    //file_log("file_load_world(): %i modified chunks", save->modifiedChunksCount);
     save->modifiedChunks = malloc(save->modifiedChunksCount * sizeof(struct ChunkModification));
     blockData = ptr + save->modifiedChunksCount * CHUNK_MOD_SIZE;
     for (int i = 0; i < save->modifiedChunksCount; i++)
@@ -183,7 +182,6 @@ void file_load_world(struct SaveFile *save, const char *name)
         chunkMod->x = deserialize_int32_t(&ptr);
         chunkMod->z = deserialize_int32_t(&ptr);
         chunkMod->modifiedBlocksCount = deserialize_uint32_t(&ptr);
-        //file_log("file_load_world(): reading chunk data: x = %i, z = %i, modifiedBlocksCount = %i", chunkMod->x, chunkMod->z, chunkMod->modifiedBlocksCount);
         chunkMod->modifiedBlocks = malloc(chunkMod->modifiedBlocksCount * sizeof(struct BlockModification));
         
         //Read modified block data
@@ -199,13 +197,40 @@ void file_load_world(struct SaveFile *save, const char *name)
     }
     
   close:
+    free(buffer);
     fclose(file);
+}
+
+static size_t calc_save_size(struct SaveFile *save)
+{
+    size_t size = 0;
+    
+    size += sizeof(fileMagic) - 1;  //file signature
+    size += SAVENAME_MAX;           //name
+    size += SEED_MAX;               //seed
+    size += 3 * sizeof(int32_t);    //spawn location
+    size += sizeof(uint32_t);       //number of modified chunks
+    
+    //chunk data
+    for (int i = 0; i < save->modifiedChunksCount; i++)
+    {
+        size += sizeof(int32_t);   //x
+        size += sizeof(int32_t);   //z
+        size += sizeof(uint32_t);  //number of modified blocks
+        size += 4;                 //TODO: Find out why I need 4 extra bytes
+        
+        //block data
+        size += save->modifiedChunks[i].modifiedBlocksCount * 4 * sizeof(uint8_t);
+    }
+    
+    return size;
 }
 
 void file_save_world(struct SaveFile *save)
 {
     char *path = malloc(strlen(savePath) + 1 + strlen(save->name) + 1);
     FILE *file;
+    size_t size;
     byte *buffer;
     byte *ptr;
     byte *blockData;
@@ -220,10 +245,13 @@ void file_save_world(struct SaveFile *save)
     
     file_log("file_save_world(): saving world '%s' to file '%s'", save->name, path);
     
+    //Allocate write buffer
+    size = calc_save_size(save);
+    buffer = malloc(size);
+    ptr = buffer;
+    
     file = fopen(path, "w");
     assert(file != NULL);
-    buffer = malloc(2048);  //TODO: calculate actual size needed
-    ptr = buffer;
     
     //Write magic value
     serialize_string(&ptr, fileMagic, strlen(fileMagic));
@@ -243,7 +271,7 @@ void file_save_world(struct SaveFile *save)
     
     //Write modified chunk data
     serialize_uint32_t(&ptr, save->modifiedChunksCount);
-    //file_log("file_save_world(): %i modified chunks", save->modifiedChunksCount);
+     
     blockData = ptr + save->modifiedChunksCount * CHUNK_MOD_SIZE;
     for (int i = 0; i < save->modifiedChunksCount; i++)
     {
@@ -252,7 +280,6 @@ void file_save_world(struct SaveFile *save)
         serialize_int32_t(&ptr, chunkMod->x);
         serialize_int32_t(&ptr, chunkMod->z);
         serialize_uint32_t(&ptr, chunkMod->modifiedBlocksCount);
-        //file_log("file_save_world(): writing chunk data: x = %i, z = %i, modifiedBlocksCount = %i", chunkMod->x, chunkMod->z, chunkMod->modifiedBlocksCount);
         
         //Write modified block data
         for (int j = 0; j < chunkMod->modifiedBlocksCount; j++)
@@ -263,11 +290,10 @@ void file_save_world(struct SaveFile *save)
             serialize_uint8_t(&blockData, blockMod->y);
             serialize_uint8_t(&blockData, blockMod->z);
             serialize_uint8_t(&blockData, blockMod->type);
-            //file_log("file_save_world(): wrote chunk %i, %i, block %i, %i, %i",
-            //  chunkMod->x, chunkMod->z, blockMod->x, blockMod->y, blockMod->z);
         }
     }
     
+    assert(size == blockData - buffer);  //Make darn sure our buffer was the correct size
     fwrite(buffer, blockData - buffer, 1, file);
     fclose(file);
 }
