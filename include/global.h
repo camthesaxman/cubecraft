@@ -2,6 +2,7 @@
 #define GUARD_GLOBAL_H
 
 //Standard C headers
+#include <ctype.h>
 #include <limits.h>
 #include <malloc.h>
 #include <math.h>
@@ -26,6 +27,7 @@
 extern int gDisplayWidth;
 extern int gDisplayHeight;
 extern u16 gControllerPressedKeys;
+extern u16 gControllerReleasedKeys;
 extern u16 gControllerHeldKeys;
 extern s8 gAnalogStickX;
 extern s8 gAnalogStickY;
