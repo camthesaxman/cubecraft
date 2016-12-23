@@ -74,7 +74,7 @@ static TPLFile blocksTPL;
 static GXTexObj blocksTexture;
 
 struct SaveFile *currentSave;
-static u16 worldSeed = 54321;
+static u16 worldSeed;
 static struct Chunk chunkTable[CHUNK_TABLE_WIDTH][CHUNK_TABLE_WIDTH];
 
 static void load_chunk_changes(struct Chunk *chunk);
@@ -688,11 +688,14 @@ void world_init(struct SaveFile *save)
     currentSave = save;
     assert(save->name != NULL);
     memset(chunkTable, 0, sizeof(chunkTable));
-    file_log("world_init(): %i chunk modifications", currentSave->modifiedChunksCount);
-    file_log("world_init(): list of modified chunks:");
-    for (int i = 0; i < currentSave->modifiedChunksCount; i++)
+    
+    //Hash the seed string.
+    worldSeed = 0;
+    for (char *c = save->seed; *c != '\0'; c++)
     {
-        file_log("world_init():     %i, %i", currentSave->modifiedChunks[i].x, currentSave->modifiedChunks[i].z);
+        int shift = ((c - save->seed) % sizeof(u16)) * CHAR_BIT;
+        
+        worldSeed |= *c << shift;
     }
 }
 
