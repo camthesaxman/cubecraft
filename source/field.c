@@ -91,9 +91,11 @@ static void pause_menu_main(void)
     {
         case 0: //Continue
         case MENU_CANCEL:
+            menu_close();
             exit_pause_menu();
             break;
         case 1: //Quit
+            menu_close();
             //Spawn at this location next time
             currentSave->spawnX = floorf(playerPosition.x);
             currentSave->spawnY = floorf(playerPosition.y);

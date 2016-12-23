@@ -123,17 +123,20 @@ static void startgame_menu_main(void)
     switch (menu_process_input())
     {
         case 0:  //Start!
+            menu_close();
             assert(strlen(saveFiles[fileNum]) > 0);
             file_load_world(&saveFile, saveFiles[fileNum]);
             field_init(&saveFile);
             break;
         case 1:  //Erase File
+            menu_close();
             menu_init(&eraseconfirmMenu);
             set_main_callback(eraseconfirm_menu_main);
             set_draw_callback(eraseconfirm_menu_draw);
             break;
         case MENU_CANCEL:
         case 2:  //Back
+            menu_close();
             files_menu_init();
             break;
     }
@@ -209,8 +212,6 @@ static void name_kb_draw(void)
 {
     draw_title_banner();
     keyboard_draw();
-    if (msgBoxActive)
-        menu_msgbox_draw();
 }
 
 static void seed_kb_main(void)
@@ -239,7 +240,10 @@ static void newgame_menu_main(void)
     if (msgBoxActive)
     {
         if (menu_msgbox_process_input())
+        {
+            menu_msgbox_close();
             msgBoxActive = false;
+        }
         return;
     }
     
@@ -273,6 +277,8 @@ static void newgame_menu_main(void)
                 break;
             }
             
+            menu_close();
+            
             //Initialize player's starting position
             saveFile.spawnX = 5;
             saveFile.spawnY = 200;
@@ -288,6 +294,7 @@ static void newgame_menu_main(void)
             break;
         case MENU_CANCEL:
         case 3:  //Back
+            menu_close();
             files_menu_init();
             break;
     }
@@ -297,8 +304,6 @@ static void newgame_menu_draw(void)
 {
     draw_title_banner();
     menu_draw();
-    if (msgBoxActive)
-        menu_msgbox_draw();
 }
 
 static void newgame_menu_init(void)
@@ -322,10 +327,13 @@ static void files_menu_main(void)
     
     if (item == MAX_SAVE_FILES || item == MENU_CANCEL)  //Back
     {
+        menu_close();
         main_menu_init();
     }
     else
     {
+        menu_close();
+        
         if (saveFiles[item][0] == '\0')  //This is an empty save file slot
         {
             memset(saveFile.name, '\0', sizeof(saveFile.name));
@@ -399,9 +407,11 @@ static void main_menu_main(void)
         switch (menu_process_input())
         {
             case 0:  //Start Game
+                menu_close();
                 files_menu_init();
                 break;
             case 1:  //Exit to Homebrew Channel
+                menu_close();
                 exit(0);
                 break;
         }

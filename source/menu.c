@@ -50,6 +50,9 @@ struct Rectangle
     int width, height;
 };
 
+static bool menuActive = false;
+static bool msgBoxActive = false;
+
 static const struct Menu *currentMenu;
 static struct Rectangle menuRect;
 static struct Rectangle titleRect;
@@ -92,6 +95,12 @@ void menu_init(const struct Menu *menu)
     currentMenu = menu;
     selection = 0;
     analogStickHeld = false;
+    menuActive = true;
+}
+
+void menu_close(void)
+{
+    menuActive = false;
 }
 
 int menu_process_input(void)
@@ -131,7 +140,7 @@ int menu_process_input(void)
     return MENU_NORESULT;
 }
 
-void menu_draw(void)
+static void draw_menu(void)
 {
     struct Rectangle selectionRect;
     
@@ -157,17 +166,23 @@ void menu_draw(void)
 void menu_msgbox_init(const char *text)
 {
     msgBoxText = text;
+    msgBoxActive = true;
+}
+
+void menu_msgbox_close(void)
+{
+    msgBoxActive = false;
 }
 
 bool menu_msgbox_process_input(void)
 {
-    if (gControllerPressedKeys & PAD_BUTTON_A)
+    if (msgBoxActive && (gControllerPressedKeys & PAD_BUTTON_A))
         return true;
     else
         return false;
 }
 
-void menu_msgbox_draw(void)
+static void draw_msgbox(void)
 {
     int width = 400;
     int height = 200;
@@ -179,4 +194,12 @@ void menu_msgbox_draw(void)
     text_init();
     text_set_font_size(16, 32);
     text_draw_string(gDisplayWidth / 2, gDisplayHeight / 2, TEXT_HCENTER | TEXT_VCENTER, msgBoxText);
+}
+
+void menu_draw(void)
+{
+    if (menuActive)
+        draw_menu();
+    if (msgBoxActive)
+        draw_msgbox();
 }
