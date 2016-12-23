@@ -21,7 +21,9 @@ void menu_close(void);
 int menu_process_input(void);
 void menu_msgbox_init(const char *text);
 void menu_msgbox_close(void);
+bool menu_msgbox_is_open(void);
 bool menu_msgbox_process_input(void);
 void menu_draw(void);
+void menu_wait_close_anim(void (*callback)(void));
 
 #endif //GUARD_MENU_H

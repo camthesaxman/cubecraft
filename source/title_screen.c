@@ -85,7 +85,7 @@ static struct SaveFile saveFile;
 static void main_menu_init(void);
 static void files_menu_init(void);
 static void newgame_menu_init(void);
-static void startgame_menu_init(int file);
+static void startgame_menu_init(void);
 
 static void draw_title_banner(void)
 {
@@ -108,7 +108,7 @@ static void eraseconfirm_menu_main(void)
             file_delete(saveFiles[fileNum]);
         case MENU_CANCEL:
         case 1:  //No
-            files_menu_init();
+            menu_wait_close_anim(files_menu_init);
     }
 }
 
@@ -118,26 +118,28 @@ static void eraseconfirm_menu_draw(void)
     menu_draw();
 }
 
+static void eraseconfirm_menu_init(void)
+{
+    menu_init(&eraseconfirmMenu);
+    set_main_callback(eraseconfirm_menu_main);
+    set_draw_callback(eraseconfirm_menu_draw);
+}
+
 static void startgame_menu_main(void)
 {
     switch (menu_process_input())
     {
         case 0:  //Start!
-            menu_close();
             assert(strlen(saveFiles[fileNum]) > 0);
             file_load_world(&saveFile, saveFiles[fileNum]);
             field_init(&saveFile);
             break;
         case 1:  //Erase File
-            menu_close();
-            menu_init(&eraseconfirmMenu);
-            set_main_callback(eraseconfirm_menu_main);
-            set_draw_callback(eraseconfirm_menu_draw);
+            menu_wait_close_anim(eraseconfirm_menu_init);
             break;
         case MENU_CANCEL:
         case 2:  //Back
-            menu_close();
-            files_menu_init();
+            menu_wait_close_anim(files_menu_init);
             break;
     }
 }
@@ -148,9 +150,8 @@ static void startgame_menu_draw(void)
     menu_draw();
 }
 
-static void startgame_menu_init(int file)
+static void startgame_menu_init(void)
 {
-    fileNum = file;
     menu_init(&startgameMenu);
     set_main_callback(startgame_menu_main);
     set_draw_callback(startgame_menu_draw);
@@ -162,13 +163,12 @@ static void startgame_menu_init(int file)
 
 static char nameKeyboardBuffer[SAVENAME_MAX];
 static char seedKeyboardBuffer[SEED_MAX];
-static bool msgBoxActive;  //Set whenever the "File already exists." box is shown
 
 static bool check_if_already_exists(const char *name)
 {
     if (!stricmp(name, nameKeyboardBuffer))
     {
-        msgBoxActive = true;
+        menu_msgbox_init("File already exists.");
         return false;
     }
     else
@@ -179,32 +179,27 @@ static bool check_if_already_exists(const char *name)
 
 static void name_kb_main(void)
 {
-    if (msgBoxActive)
+    if (menu_msgbox_is_open())
     {
-        if (menu_msgbox_process_input())
-            msgBoxActive = false;
-        return;
+        menu_msgbox_process_input();
     }
-    
-    switch (keyboard_process_input())
+    else
     {
-        case KEYBOARD_OK:
-            msgBoxActive = false;
-            file_enumerate(check_if_already_exists);
-            if (msgBoxActive)
-            {
-                menu_msgbox_init("File already exists.");
-            }
-            else
-            {
-                memset(saveFile.name, '\0', sizeof(saveFile.name));
-                strcpy(saveFile.name, nameKeyboardBuffer);
+        switch (keyboard_process_input())
+        {
+            case KEYBOARD_OK:
+                file_enumerate(check_if_already_exists);
+                if (!menu_msgbox_is_open())
+                {
+                    memset(saveFile.name, '\0', sizeof(saveFile.name));
+                    strcpy(saveFile.name, nameKeyboardBuffer);
+                    newgame_menu_init();
+                }
+                break;
+            case KEYBOARD_CANCEL:
                 newgame_menu_init();
-            }
-            break;
-        case KEYBOARD_CANCEL:
-            newgame_menu_init();
-            break;
+                break;
+        }
     }
 }
 
@@ -212,6 +207,16 @@ static void name_kb_draw(void)
 {
     draw_title_banner();
     keyboard_draw();
+    menu_draw();
+}
+
+static void name_kb_init(void)
+{
+    memset(nameKeyboardBuffer, '\0', sizeof(nameKeyboardBuffer));
+    strcpy(nameKeyboardBuffer, saveFile.name);
+    keyboard_init("Enter World Name", nameKeyboardBuffer, ARRAY_LENGTH(nameKeyboardBuffer));
+    set_main_callback(name_kb_main);
+    set_draw_callback(name_kb_draw);
 }
 
 static void seed_kb_main(void)
@@ -235,68 +240,61 @@ static void seed_kb_draw(void)
     keyboard_draw();
 }
 
+static void seed_kb_init(void)
+{
+    memset(seedKeyboardBuffer, '\0', sizeof(seedKeyboardBuffer));
+    strcpy(seedKeyboardBuffer, saveFile.seed);
+    keyboard_init("Enter World Seed", seedKeyboardBuffer, ARRAY_LENGTH(seedKeyboardBuffer));
+    set_main_callback(seed_kb_main);
+    set_draw_callback(seed_kb_draw);
+}
+
 static void newgame_menu_main(void)
 {
-    if (msgBoxActive)
+    if (menu_msgbox_is_open())
     {
-        if (menu_msgbox_process_input())
-        {
-            menu_msgbox_close();
-            msgBoxActive = false;
-        }
-        return;
+        menu_msgbox_process_input();
     }
-    
-    switch (menu_process_input())
+    else
     {
-        case 0:  //Enter Name
-            memset(nameKeyboardBuffer, '\0', sizeof(nameKeyboardBuffer));
-            strcpy(nameKeyboardBuffer, saveFile.name);
-            keyboard_init("Enter World Name", nameKeyboardBuffer, ARRAY_LENGTH(nameKeyboardBuffer));
-            set_main_callback(name_kb_main);
-            set_draw_callback(name_kb_draw);
-            break;
-        case 1:  //Enter Seed
-            memset(seedKeyboardBuffer, '\0', sizeof(seedKeyboardBuffer));
-            strcpy(seedKeyboardBuffer, saveFile.seed);
-            keyboard_init("Enter World Seed", seedKeyboardBuffer, ARRAY_LENGTH(seedKeyboardBuffer));
-            set_main_callback(seed_kb_main);
-            set_draw_callback(seed_kb_draw);
-            break;
-        case 2:  //Start!
-            if (strlen(saveFile.name) == 0)
-            {
-                menu_msgbox_init("You must enter a name.");
-                msgBoxActive = true;
+        switch (menu_process_input())
+        {
+            case 0:  //Enter Name
+                menu_wait_close_anim(name_kb_init);
                 break;
-            }
-            if (strlen(saveFile.seed) == 0)
-            {
-                menu_msgbox_init("You must enter a seed.");
-                msgBoxActive = true;
+            case 1:  //Enter Seed
+                menu_wait_close_anim(seed_kb_init);
                 break;
-            }
-            
-            menu_close();
-            
-            //Initialize player's starting position
-            saveFile.spawnX = 5;
-            saveFile.spawnY = 200;
-            saveFile.spawnZ = 5;
-            saveFile.modifiedChunks = NULL;
-            saveFile.modifiedChunksCount = 0;
-            
-            file_save_world(&saveFile);
-            //file_load_world(&saveFile, saveFile.name);
-            assert(strlen(saveFile.name) > 0);
-            assert(strlen(saveFile.seed) > 0);
-            field_init(&saveFile);
-            break;
-        case MENU_CANCEL:
-        case 3:  //Back
-            menu_close();
-            files_menu_init();
-            break;
+            case 2:  //Start!
+                if (strlen(saveFile.name) == 0)
+                {
+                    menu_msgbox_init("You must enter a name.");
+                    break;
+                }
+                if (strlen(saveFile.seed) == 0)
+                {
+                    menu_msgbox_init("You must enter a seed.");
+                    break;
+                }
+                
+                //Initialize player's starting position
+                saveFile.spawnX = 5;
+                saveFile.spawnY = 200;
+                saveFile.spawnZ = 5;
+                saveFile.modifiedChunks = NULL;
+                saveFile.modifiedChunksCount = 0;
+                
+                file_save_world(&saveFile);
+                //file_load_world(&saveFile, saveFile.name);
+                assert(strlen(saveFile.name) > 0);
+                assert(strlen(saveFile.seed) > 0);
+                field_init(&saveFile);
+                break;
+            case MENU_CANCEL:
+            case 3:  //Back
+                menu_wait_close_anim(files_menu_init);
+                break;
+        }
     }
 }
 
@@ -308,7 +306,6 @@ static void newgame_menu_draw(void)
 
 static void newgame_menu_init(void)
 {
-    msgBoxActive = false;
     menu_init(&newgameMenu);
     set_main_callback(newgame_menu_main);
     set_draw_callback(newgame_menu_draw);
@@ -327,22 +324,20 @@ static void files_menu_main(void)
     
     if (item == MAX_SAVE_FILES || item == MENU_CANCEL)  //Back
     {
-        menu_close();
-        main_menu_init();
+        menu_wait_close_anim(main_menu_init);
     }
     else
     {
-        menu_close();
-        
         if (saveFiles[item][0] == '\0')  //This is an empty save file slot
         {
             memset(saveFile.name, '\0', sizeof(saveFile.name));
             memset(saveFile.seed, '\0', sizeof(saveFile.seed));
-            newgame_menu_init();
+            menu_wait_close_anim(newgame_menu_init);
         }
         else
         {
-            startgame_menu_init(item);
+            fileNum = item;
+            menu_wait_close_anim(startgame_menu_init);
         }
     }
 }
@@ -398,23 +393,17 @@ static void files_menu_init(void)
 
 static void main_menu_main(void)
 {
-    if (gControllerPressedKeys & PAD_BUTTON_B)
+    switch (menu_process_input())
     {
-        title_screen_init();
-    }
-    else
-    {
-        switch (menu_process_input())
-        {
-            case 0:  //Start Game
-                menu_close();
-                files_menu_init();
-                break;
-            case 1:  //Exit to Homebrew Channel
-                menu_close();
-                exit(0);
-                break;
-        }
+        case MENU_CANCEL:
+            menu_wait_close_anim(title_screen_init);
+            break;
+        case 0:  //Start Game
+            menu_wait_close_anim(files_menu_init);
+            break;
+        case 1:  //Exit to Homebrew Channel
+            exit(0);
+            break;
     }
 }
 

@@ -83,7 +83,7 @@ static void pause_menu_main(void)
 {
     if (gControllerPressedKeys & PAD_BUTTON_START)
     {
-        exit_pause_menu();
+        menu_wait_close_anim(exit_pause_menu);
         return;
     }
     
@@ -91,18 +91,16 @@ static void pause_menu_main(void)
     {
         case 0: //Continue
         case MENU_CANCEL:
-            menu_close();
-            exit_pause_menu();
+            menu_wait_close_anim(exit_pause_menu);
             break;
         case 1: //Quit
-            menu_close();
-            //Spawn at this location next time
+            //Spawn at the current location next time
             currentSave->spawnX = floorf(playerPosition.x);
             currentSave->spawnY = floorf(playerPosition.y);
             currentSave->spawnZ = floorf(playerPosition.z);
             file_log("menu_process_input(): exiting world. position: %i, %i, %i", currentSave->spawnX, currentSave->spawnY, currentSave->spawnZ);
             world_close();
-            title_screen_init();
+            menu_wait_close_anim(title_screen_init);
             break;
     }
 }

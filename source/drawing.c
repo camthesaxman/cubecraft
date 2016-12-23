@@ -27,13 +27,13 @@ void drawing_set_3d_mode(void)
 void drawing_draw_solid_rect(int x, int y, int width, int height)
 {
     GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-    GX_Position2u16(x, y);
+    GX_Position2s16(x, y);
     GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
-    GX_Position2u16(x + width, y);
+    GX_Position2s16(x + width, y);
     GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
-    GX_Position2u16(x + width, y + height);
+    GX_Position2s16(x + width, y + height);
     GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
-    GX_Position2u16(x, y + height);
+    GX_Position2s16(x, y + height);
     GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
     GX_End();
 }
@@ -41,15 +41,15 @@ void drawing_draw_solid_rect(int x, int y, int width, int height)
 void drawing_draw_outline_rect(int x, int y, int width, int height)
 {
     GX_Begin(GX_LINESTRIP, GX_VTXFMT0, 5);
-    GX_Position2u16(x, y);
+    GX_Position2s16(x, y);
     GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
-    GX_Position2u16(x + width, y);
+    GX_Position2s16(x + width, y);
     GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
-    GX_Position2u16(x + width, y + height);
+    GX_Position2s16(x + width, y + height);
     GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
-    GX_Position2u16(x, y + height);
+    GX_Position2s16(x, y + height);
     GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
-    GX_Position2u16(x, y);
+    GX_Position2s16(x, y);
     GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
     GX_End();
 }
@@ -57,13 +57,13 @@ void drawing_draw_outline_rect(int x, int y, int width, int height)
 void drawing_draw_textured_rect(int x, int y, int width, int height)
 {
     GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-    GX_Position2u16(x, y);
+    GX_Position2s16(x, y);
     GX_TexCoord2u16(0, 0);
-    GX_Position2u16(x + width, y);
+    GX_Position2s16(x + width, y);
     GX_TexCoord2u16(textureWidth, 0);
-    GX_Position2u16(x + width, y + height);
+    GX_Position2s16(x + width, y + height);
     GX_TexCoord2u16(textureWidth, textureHeight);
-    GX_Position2u16(x, y + height);
+    GX_Position2s16(x, y + height);
     GX_TexCoord2u16(0, textureHeight);
     GX_End();
 }
@@ -71,9 +71,9 @@ void drawing_draw_textured_rect(int x, int y, int width, int height)
 void drawing_draw_line(int x1, int y1, int x2, int y2)
 {
     GX_Begin(GX_LINES, GX_VTXFMT0, 2);
-    GX_Position2u16(x1, y1);
+    GX_Position2s16(x1, y1);
     GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
-    GX_Position2u16(x2, y2);
+    GX_Position2s16(x2, y2);
     GX_Color4u8(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
     GX_End();
 }
@@ -92,7 +92,7 @@ void drawing_set_fill_color(u8 r, u8 g, u8 b, u8 a)
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
     GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_U16, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_S16, 0);
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 }
 
@@ -110,6 +110,6 @@ void drawing_set_fill_texture(GXTexObj *texture, int width, int height)
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
     GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_U16, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_S16, 0);
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
 }

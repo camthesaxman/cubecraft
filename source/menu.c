@@ -1,11 +1,13 @@
 #include "global.h"
 #include "drawing.h"
+#include "main.h"
 #include "menu.h"
 #include "text.h"
 
 #define CHAR_WIDTH 16
 #define CHAR_HEIGHT 32
 #define PADDING 10
+#define ANIM_SPEED 64
 
 /* Menu layout
  *
@@ -51,16 +53,25 @@ struct Rectangle
 };
 
 static bool menuActive = false;
-static bool msgBoxActive = false;
-
 static const struct Menu *currentMenu;
 static struct Rectangle menuRect;
 static struct Rectangle titleRect;
 static struct Rectangle itemsRect;
 static int selection;
 static bool analogStickHeld;
+static bool menuClosing;
+static bool menuAnimActive;
+static int menuAnimCounter;
 
+static bool msgBoxActive = false;
 static const char *msgBoxText;
+static bool msgBoxClosing;
+static bool msgBoxAnimActive;
+static int msgBoxAnimCounter;
+
+//==================================================
+// Menu
+//==================================================
 
 void menu_init(const struct Menu *menu)
 {
@@ -96,11 +107,14 @@ void menu_init(const struct Menu *menu)
     selection = 0;
     analogStickHeld = false;
     menuActive = true;
+    menuClosing = false;
+    menuAnimActive = true;
+    menuAnimCounter = 0;
 }
 
 void menu_close(void)
 {
-    menuActive = false;
+    assert(false);  //TODO: remove this function
 }
 
 int menu_process_input(void)
@@ -143,16 +157,37 @@ int menu_process_input(void)
 static void draw_menu(void)
 {
     struct Rectangle selectionRect;
+    int animOffsetX = 0;
+    
+    if (menuAnimActive)
+    {
+        if (menuClosing)
+        {
+            animOffsetX = -menuAnimCounter * ANIM_SPEED;
+            if (menuRect.x + menuRect.width + animOffsetX < 0)
+                menuAnimActive = 0;
+        }
+        else
+        {
+            int x = gDisplayWidth - menuAnimCounter * ANIM_SPEED;
+            
+            if (x > menuRect.x)
+                animOffsetX = x - menuRect.x;
+            else
+                menuAnimActive = false;
+        }
+        menuAnimCounter++;
+    }
     
     drawing_set_fill_color(0, 0, 0, 150);
-    drawing_draw_solid_rect(titleRect.x, titleRect.y, titleRect.width, titleRect.height);
-    drawing_draw_solid_rect(itemsRect.x, itemsRect.y, itemsRect.width, itemsRect.height);
+    drawing_draw_solid_rect(animOffsetX + titleRect.x, titleRect.y, titleRect.width, titleRect.height);
+    drawing_draw_solid_rect(animOffsetX + itemsRect.x, itemsRect.y, itemsRect.width, itemsRect.height);
     
     text_set_font_size(16, 32);
     text_init();
-    text_draw_string(titleRect.x + PADDING, titleRect.y + PADDING, false, currentMenu->title);
+    text_draw_string(animOffsetX + titleRect.x + PADDING, titleRect.y + PADDING, false, currentMenu->title);
     for (int i = 0; i < currentMenu->nItems; i++)
-        text_draw_string(itemsRect.x + PADDING, itemsRect.y + PADDING + i * (CHAR_HEIGHT + PADDING), false, currentMenu->items[i].text);
+        text_draw_string(animOffsetX + itemsRect.x + PADDING, itemsRect.y + PADDING + i * (CHAR_HEIGHT + PADDING), false, currentMenu->items[i].text);
         
     selectionRect.x = itemsRect.x + PADDING;
     selectionRect.y = itemsRect.y + PADDING + selection * (CHAR_HEIGHT + PADDING);
@@ -160,13 +195,20 @@ static void draw_menu(void)
     selectionRect.height = CHAR_HEIGHT;
     
     drawing_set_fill_color(255, 255, 255, 255);
-    drawing_draw_outline_rect(selectionRect.x, selectionRect.y, selectionRect.width, selectionRect.height);
+    drawing_draw_outline_rect(animOffsetX + selectionRect.x, selectionRect.y, selectionRect.width, selectionRect.height);
 }
+
+//==================================================
+// Message Box
+//==================================================
 
 void menu_msgbox_init(const char *text)
 {
     msgBoxText = text;
     msgBoxActive = true;
+    msgBoxClosing = false;
+    msgBoxAnimActive = true;
+    msgBoxAnimCounter = 0;
 }
 
 void menu_msgbox_close(void)
@@ -174,12 +216,29 @@ void menu_msgbox_close(void)
     msgBoxActive = false;
 }
 
+bool menu_msgbox_is_open(void)
+{
+    return msgBoxActive;
+}
+
 bool menu_msgbox_process_input(void)
 {
-    if (msgBoxActive && (gControllerPressedKeys & PAD_BUTTON_A))
-        return true;
-    else
-        return false;
+    if (!msgBoxAnimActive)
+    {
+        if (msgBoxClosing)  //finished closing animation
+        {
+            msgBoxActive = false;
+            return true;
+        }
+        else if (gControllerPressedKeys & PAD_BUTTON_A)
+        {
+            //start closing animation
+            msgBoxClosing = true;
+            msgBoxAnimActive = true;
+            msgBoxAnimCounter = 0;
+        }
+    }
+    return false;
 }
 
 static void draw_msgbox(void)
@@ -188,12 +247,33 @@ static void draw_msgbox(void)
     int height = 200;
     int x = (gDisplayWidth - width) / 2;
     int y = (gDisplayHeight - height) / 2;
+    int animOffsetY = 0;
+    
+    if (msgBoxAnimActive)
+    {
+        if (msgBoxClosing)
+        {
+            animOffsetY = msgBoxAnimCounter * ANIM_SPEED;
+            if (y + animOffsetY > gDisplayHeight)
+                msgBoxAnimActive = false;
+        }
+        else
+        {
+            animOffsetY = (gDisplayHeight - msgBoxAnimCounter * ANIM_SPEED) - y;
+            if (animOffsetY < 0)
+            {
+                animOffsetY = 0;
+                msgBoxAnimActive = false;
+            }
+        }
+        msgBoxAnimCounter++;
+    }
     
     drawing_set_fill_color(0, 0, 0, 150);
-    drawing_draw_solid_rect(x, y, width, height);
+    drawing_draw_solid_rect(x, animOffsetY + y, width, height);
     text_init();
     text_set_font_size(16, 32);
-    text_draw_string(gDisplayWidth / 2, gDisplayHeight / 2, TEXT_HCENTER | TEXT_VCENTER, msgBoxText);
+    text_draw_string(x + width / 2, animOffsetY + y + height / 2, TEXT_HCENTER | TEXT_VCENTER, msgBoxText);
 }
 
 void menu_draw(void)
@@ -202,4 +282,26 @@ void menu_draw(void)
         draw_menu();
     if (msgBoxActive)
         draw_msgbox();
+}
+
+static void (*animDoneCallback)(void);
+
+static void menu_wait_main_callback(void)
+{
+    assert(menuClosing);
+    if (!menuAnimActive)
+    {
+        menuActive = false;
+        animDoneCallback();
+    }
+}
+
+void menu_wait_close_anim(void (*callback)(void))
+{
+    assert(menuActive);
+    menuAnimActive = true;
+    menuAnimCounter = 0;
+    menuClosing = true;
+    animDoneCallback = callback;
+    set_main_callback(menu_wait_main_callback);
 }
