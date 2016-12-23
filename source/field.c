@@ -447,8 +447,8 @@ static void field_main(void)
             inventorySelection = 0;
     }
     
-    yaw += (float)analog_stick_clamp(gCStickX, 15) / 35.0;
-    pitch += (float)analog_stick_clamp(gCStickY, 15) / 35.0;
+    yaw += (float)analog_stick_clamp(gCStickX, 15) / 40.0;
+    pitch += (float)analog_stick_clamp(gCStickY, 15) / 40.0;
     
     right = (float)analog_stick_clamp(gAnalogStickX, 15) / 1000.0;
     forward = (float)analog_stick_clamp(gAnalogStickY, 15) / 1000.0;
