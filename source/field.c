@@ -14,7 +14,7 @@
 //playerPosition.x - PLAYER_RADIUS to playerPosition.x + PLAYER_RADIUS,
 //playerPosition.z - PLAYER_RADIUS to playerPosition.z + PLAYER_RADIUS, and
 //playerPosition.y to playerPosition.y + PLAYER_HEIGHT
-#define PLAYER_RADIUS 0.5
+#define PLAYER_RADIUS 0.25
 #define PLAYER_HEIGHT 1.5
 
 //How far the player's eyes are above where they are standing
@@ -316,6 +316,124 @@ static void draw_block_selection(void)
     GX_End();
 }
 
+static void apply_motion_vector(struct Vec3f motion)
+{
+    struct Vec3f newPosition = playerPosition;
+    int xMin = floorf(playerPosition.x - PLAYER_RADIUS);
+    int xMax = floorf(playerPosition.x + PLAYER_RADIUS);
+    int yMin = floorf(playerPosition.y);
+    int yMax = floorf(playerPosition.y + PLAYER_HEIGHT);
+    int zMin = floorf(playerPosition.z - PLAYER_RADIUS);
+    int zMax = floorf(playerPosition.z + PLAYER_RADIUS);
+    bool testX = false;
+    bool testY = false;
+    bool testZ = false;
+    int x, y, z;
+    bool collided;
+    
+    //Clamp fall speed to avoid tunneling problem on large falls. This should be very rare.
+    if (motion.y < -1.0)
+        motion.y = -1.0;
+    
+    if (motion.x < 0.0)
+    {
+        x = floorf(playerPosition.x - PLAYER_RADIUS + motion.x);
+        testX = true;
+    }
+    else if (motion.x > 0.0)
+    {
+        x = floorf(playerPosition.x + PLAYER_RADIUS + motion.x);
+        testX = true;
+    }
+    
+    if (motion.y < 0.0)
+    {
+        y = floorf(playerPosition.y + motion.y);
+        testY = true;
+    }
+    else if (motion.y > 0.0)
+    {
+        y = floorf(playerPosition.y + PLAYER_HEIGHT + motion.y);
+        testY = true;
+    }
+    
+    if (motion.z < 0.0)
+    {
+        z = floorf(playerPosition.z - PLAYER_RADIUS + motion.z);
+        testZ = true;
+    }
+    else if (motion.z > 0.0)
+    {
+        z = floorf(playerPosition.z + PLAYER_RADIUS + motion.z);
+        testZ = true;
+    }
+    
+    if (testX)
+    {
+        collided = false;
+        for (int y = yMin; y <= yMax; y++)
+        {
+            for (int z = zMin; z <= zMax; z++)
+            {
+                if (BLOCK_IS_SOLID(world_get_block_at(x, y, z)))
+                    collided = true; 
+            }
+        }
+        if (!collided)
+            newPosition.x += motion.x;
+    }
+    
+    if (testY)
+    {
+        assert(state == MIDAIR);
+        collided = false;
+        for (int x = xMin; x <= xMax; x++)
+        {
+            for (int z = zMin; z <= zMax; z++)
+            {
+                if (BLOCK_IS_SOLID(world_get_block_at(x, y, z)))
+                    collided = true;
+            }
+        }
+        if (collided)
+        {
+            if (motion.y < 0.0)
+                state = STANDING;
+            yVelocity = 0.0;
+        }
+        else
+        {
+            newPosition.y += motion.y;
+        }
+    }
+    
+    if (testZ)
+    {
+        collided = false;
+        for (int x = xMin; x <= xMax; x++)
+        {
+            for (int y = yMin; y <= yMax; y++)
+            {
+                if (BLOCK_IS_SOLID(world_get_block_at(x, y, z)))
+                    collided = true;
+            }
+        }
+        if (!collided)
+            newPosition.z += motion.z;
+    }
+    
+    playerPosition = newPosition;
+    
+    if (state == STANDING)
+    {
+        if (!BLOCK_IS_SOLID(world_get_block_at(playerPosition.x, playerPosition.y - 1.0, playerPosition.z)))
+        {
+            state = MIDAIR;
+        }
+    }
+}
+
+/*
 //TODO: This collision check can be improved.
 static void apply_motion_vector(struct Vec3f motion)
 {
@@ -373,6 +491,7 @@ static void apply_motion_vector(struct Vec3f motion)
         }
     }
 }
+*/
 
 static int analog_stick_clamp(int value, int deadzone)
 {
@@ -546,7 +665,7 @@ static void field_draw(void)
             text_draw_string_formatted(50, 82, 0, "Selected block: (%i, %i, %i)", selectedBlockPos.x, selectedBlockPos.y, selectedBlockPos.z);
         else
             text_draw_string(50, 82, 0, "Selected block: none");
-        text_draw_string_formatted(50, 98, 0, "State: %s", get_state_text());
+        text_draw_string_formatted(50, 98, 0, "State: %s, yVelocity = %.2f", get_state_text(), yVelocity);
         text_draw_string_formatted(50, 114, 0, "FPS: %i", gFramesPerSecond);
         text_draw_string_formatted(50, 130, 0, "World: %s, Seed: %s", currentSave->name, currentSave->seed);
     }
