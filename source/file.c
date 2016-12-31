@@ -12,46 +12,6 @@ static const char fileMagic[] = "CUBECRAFTvALPHA";
 static const char savePath[] = "/apps/cubecraft/worlds";
 static const char logFilePath[] = "/apps/cubecraft/log.txt";
 
-static bool can_open_root_dir(void)
-{
-    DIR *rootDir = opendir("/");
-    if (rootDir != NULL)
-    {
-        closedir(rootDir);
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-static void ensure_worlds_dir(void)
-{
-    DIR *saveDir = opendir(savePath);
-    
-    if (saveDir != NULL)
-    {
-        closedir(saveDir);
-    }
-    else
-    {
-        //Directory doesn't exist. Create it.
-        mkdir(savePath, 0777); //This 0777 is in octal
-        
-        //Make sure we can open it
-        saveDir = opendir(savePath);
-        assert(saveDir != NULL);
-        closedir(saveDir);
-    }
-}
-
-static size_t file_size(FILE *file)
-{
-    fseek(file, 0, SEEK_END);
-    return ftell(file);
-}
-
 //Generate serialize and deserialize functions for integer types
 #define X(typename)                                                             \
 static void serialize_##typename(byte **dst, typename x)                        \
@@ -217,11 +177,47 @@ static void write_save(struct SaveFile *save, byte *buffer, size_t bufSize)
     assert(bufSize >= blockData - buffer);  //Make darn sure our buffer was the correct size
 }
 
-//We're testing the GameCube memory card saving on Wii for now
-#undef PLATFORM_WII
-#define PLATFORM_GAMECUBE
-
 #if defined(PLATFORM_WII)
+
+static bool can_open_root_dir(void)
+{
+    DIR *rootDir = opendir("/");
+    if (rootDir != NULL)
+    {
+        closedir(rootDir);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+static void ensure_worlds_dir(void)
+{
+    DIR *saveDir = opendir(savePath);
+    
+    if (saveDir != NULL)
+    {
+        closedir(saveDir);
+    }
+    else
+    {
+        //Directory doesn't exist. Create it.
+        mkdir(savePath, 0777); //This 0777 is in octal
+        
+        //Make sure we can open it
+        saveDir = opendir(savePath);
+        assert(saveDir != NULL);
+        closedir(saveDir);
+    }
+}
+
+static size_t file_size(FILE *file)
+{
+    fseek(file, 0, SEEK_END);
+    return ftell(file);
+}
 
 void file_init(void)
 {
@@ -344,11 +340,6 @@ void file_init(void)
     s32 status;
     u8 *sysWorkArea;
     
-    //Temporary: remove logging capabilities when we actually run on the GameCube
-    assert(fatInitDefault());
-    assert(can_open_root_dir());
-    remove(logFilePath);
-    
     status = CARD_Init(gameCode, makerCode);
     file_log("CARD_Init returned %i", status);
     sysWorkArea = memalign(32, CARD_WORKAREA);
@@ -358,19 +349,10 @@ void file_init(void)
 
 void file_log(const char *fmt, ...)
 {
-    FILE *logFile = fopen(logFilePath, "a");
-    va_list args;
-    
-    va_start(args, fmt);
-    vfprintf(logFile, fmt, args);
-    va_end(args);
-    fputs("\r\n", logFile);
-    fclose(logFile);
 }
 
 void file_enumerate(bool (*callback)(const char *filename))
 {
-    /*
     card_dir cardDir;
     s32 status;
     
@@ -381,40 +363,36 @@ void file_enumerate(bool (*callback)(const char *filename))
         callback((const char *)cardDir.filename);
         status = CARD_FindNext(&cardDir);
     }
-    */
 }
 
 void file_load_world(struct SaveFile *save, const char *name)
 {
-    /*
     card_file file;
     s32 status;
+    size_t size;
     byte *buffer;
-    char temp[16];
     
-    assert(false);
     file_log("file_load_world()");
-    
     status = CARD_Open(CARD_SLOTA, name, &file);
     file_log("CARD_Open returned %i", status);
     if (status == CARD_ERROR_READY)
     {
-        file_log("file size = %i", file.len);
-        buffer = malloc(file.len);
-        
-        CARD_Read(&file, buffer, file.len, 0);
-        
-        //Check what was written
-        strncpy(temp, (char *)buffer, 16);
-        temp[15] = '\0';
-        file_log("temp is '%s'", temp);
-        
-        read_save(save, buffer, file.len);
-        
+        size = file.len;
+        file_log("file size = %u", size);
+        buffer = malloc(size);
+        status = CARD_Read(&file, buffer, size, 0);
+        file_log("CARD_Read returned %i", status);
+        read_save(save, buffer, size);
         free(buffer);
         CARD_Close(&file);
+        file_log("CARD_Close returned %i", status);
     }
-    */
+    
+    file_log("file_load_world(): loaded save file");
+    file_log("file_load_world(): name = '%s'", save->name);
+    file_log("file_load_world(): seed = '%s'", save->seed);
+    file_log("file_load_world(): position = %i, %i, %i", save->spawnX, save->spawnY, save->spawnZ);
+    file_log("file_load_world(): modified chunks: %i", save->modifiedChunksCount);
 }
 
 static inline int round_up(int number, int multiple)
@@ -424,7 +402,6 @@ static inline int round_up(int number, int multiple)
 
 void file_save_world(struct SaveFile *save)
 {
-    /*
     card_file file;
     s32 status;
     u32 sectorSize;
@@ -471,7 +448,6 @@ void file_save_world(struct SaveFile *save)
     free(buffer);
     status = CARD_Close(&file);
     file_log("CARD_Close returned %i", status);
-    */
 }
 
 void file_delete(const char *name)
