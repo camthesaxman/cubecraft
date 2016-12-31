@@ -214,7 +214,7 @@ static void generate_land(struct Chunk *chunk)
     gameCubeY = randVal;
     randVal = random(randVal);
     gameCubeZ = randVal % CHUNK_WIDTH;
-    gameCubeY %= heightmap[gameCubeX][gameCubeZ];
+    gameCubeY %= heightmap[gameCubeX][gameCubeZ] - 1;
     assert(gameCubeX >= 0);
     assert(gameCubeX < CHUNK_WIDTH);
     assert(gameCubeZ >= 0);
