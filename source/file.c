@@ -217,6 +217,7 @@ static void write_save(struct SaveFile *save, byte *buffer, size_t bufSize)
     assert(bufSize >= blockData - buffer);  //Make darn sure our buffer was the correct size
 }
 
+//We're testing the GameCube memory card saving on Wii for now
 #undef PLATFORM_WII
 #define PLATFORM_GAMECUBE
 
@@ -343,16 +344,17 @@ void file_init(void)
 {
     s32 status;
     
-    //Initialize libfat so we can log to the Wii's SD card
+    //Temporary: remove logging capabilities when we actually run on the GameCube
     assert(fatInitDefault());
     assert(can_open_root_dir());
     remove(logFilePath);
     
-    return;
     status = CARD_Init(gameCode, makerCode);
     file_log("CARD_Init returned %i", status);
+    /*
     status = CARD_Mount(CARD_SLOTA, sysWorkArea, card_remove_callback);
     file_log("CARD_Mount returned %i", status);
+    */
 }
 
 void file_log(const char *fmt, ...)
@@ -369,7 +371,7 @@ void file_log(const char *fmt, ...)
 
 void file_enumerate(bool (*callback)(const char *filename))
 {
-    return;
+    /*
     card_dir cardDir;
     s32 status;
     
@@ -380,11 +382,12 @@ void file_enumerate(bool (*callback)(const char *filename))
         callback((const char *)cardDir.filename);
         status = CARD_FindNext(&cardDir);
     }
+    */
 }
 
 void file_load_world(struct SaveFile *save, const char *name)
 {
-    return;
+    /*
     card_file file;
     s32 status;
     byte *buffer;
@@ -412,6 +415,7 @@ void file_load_world(struct SaveFile *save, const char *name)
         free(buffer);
         CARD_Close(&file);
     }
+    */
 }
 
 static inline int round_up(int number, int multiple)
@@ -421,7 +425,7 @@ static inline int round_up(int number, int multiple)
 
 void file_save_world(struct SaveFile *save)
 {
-    return;
+    /*
     card_file file;
     s32 status;
     u32 sectorSize;
@@ -468,13 +472,15 @@ void file_save_world(struct SaveFile *save)
     free(buffer);
     status = CARD_Close(&file);
     file_log("CARD_Close returned %i", status);
+    */
 }
 
 void file_delete(const char *name)
 {
-    return;
+    /*
     file_log("deleting file '%s'", name);
     CARD_Delete(CARD_SLOTA, name);
+    */
 }
 
 #endif
