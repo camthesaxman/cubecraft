@@ -539,13 +539,13 @@ static void field_main(void)
     }
     else if (gControllerPressedKeys & PAD_BUTTON_Y)
     {
-        if (selectedBlockActive && inventory[inventorySelection].count > 0)
+        if (selectedBlockActive && gSaveFile.inventory[inventorySelection].count > 0)
         {
             world_set_block(selectedBlockPos.x + selectedBlockFace.x,
                             selectedBlockPos.y + selectedBlockFace.y,
                             selectedBlockPos.z + selectedBlockFace.z,
-                            inventory[inventorySelection].type);
-            inventory[inventorySelection].count--;
+                            gSaveFile.inventory[inventorySelection].type);
+            gSaveFile.inventory[inventorySelection].count--;
         }
     }
     

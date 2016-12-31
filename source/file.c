@@ -1,5 +1,6 @@
 #include "global.h"
 #include "file.h"
+#include "inventory.h"
 #include "world.h"
 
 //TODO: Use actual error handling rather than assert
@@ -53,11 +54,12 @@ static size_t calc_save_size(struct SaveFile *save)
 {
     size_t size = 0;
     
-    size += sizeof(fileMagic) - 1;  //file signature
-    size += SAVENAME_MAX;           //name
-    size += SEED_MAX;               //seed
-    size += 3 * sizeof(int32_t);    //spawn location
-    size += sizeof(uint32_t);       //number of modified chunks
+    size += sizeof(fileMagic) - 1;    //file signature
+    size += SAVENAME_MAX;             //name
+    size += SEED_MAX;                 //seed
+    size += 3 * sizeof(int32_t);      //spawn location
+    size += 8 * 2 * sizeof(uint8_t);  //inventory
+    size += sizeof(uint32_t);         //number of modified chunks
     
     //chunk data
     for (int i = 0; i < save->modifiedChunksCount; i++)
@@ -98,6 +100,13 @@ static void read_save(struct SaveFile *save, byte *buffer, size_t bufSize)
     save->spawnX = deserialize_int32_t(&ptr);
     save->spawnY = deserialize_int32_t(&ptr);
     save->spawnZ = deserialize_int32_t(&ptr);
+    
+    //Read inventory
+    for (int i = 0; i < NUM_ITEM_SLOTS; i++)
+    {
+        save->inventory[i].type = deserialize_uint8_t(&ptr);
+        save->inventory[i].count = deserialize_uint8_t(&ptr);
+    }
     
     //Read modified chunk data
     save->modifiedChunksCount = deserialize_uint32_t(&ptr);
@@ -149,6 +158,13 @@ static void write_save(struct SaveFile *save, byte *buffer, size_t bufSize)
     serialize_int32_t(&ptr, save->spawnX);
     serialize_int32_t(&ptr, save->spawnY);
     serialize_int32_t(&ptr, save->spawnZ);
+    
+    //Write inventory
+    for (int i = 0; i < NUM_ITEM_SLOTS; i++)
+    {
+        serialize_uint8_t(&ptr, save->inventory[i].type);
+        serialize_uint8_t(&ptr, save->inventory[i].count);
+    }
     
     //Write modified chunk data
     serialize_uint32_t(&ptr, save->modifiedChunksCount);

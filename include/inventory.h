@@ -6,8 +6,8 @@
 
 struct ItemSlot
 {
-    int type;
-    int count;
+    u8 type;
+    u8 count;
 };
 
 extern struct ItemSlot inventory[NUM_ITEM_SLOTS];

@@ -15,6 +15,7 @@ struct SaveFile
     char name[SAVENAME_MAX];
     char seed[SEED_MAX];
     int spawnX, spawnY, spawnZ;
+    struct ItemSlot inventory[NUM_ITEM_SLOTS];
     struct ChunkModification *modifiedChunks;
     int modifiedChunksCount;
 };

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "file.h"
 #include "drawing.h"
 #include "inventory.h"
 #include "text.h"
@@ -26,7 +27,6 @@ enum
     ICON_GAMECUBE
 };
 
-struct ItemSlot inventory[NUM_ITEM_SLOTS];
 int inventorySelection;
 
 static TPLFile itemIconsTPL;
@@ -49,7 +49,7 @@ static int get_nonempty_slots_count(void)
     
     for (int i = 0; i < NUM_ITEM_SLOTS; i++)
     {
-        if (inventory[i].count > 0)
+        if (gSaveFile.inventory[i].count > 0)
             n++;
     }
     return n;
@@ -84,9 +84,9 @@ void inventory_draw(void)
     GX_Begin(GX_QUADS, GX_VTXFMT0, get_nonempty_slots_count() * 4);
     for (int i = 0; i < NUM_ITEM_SLOTS; i++)
     {
-        if (inventory[i].count > 0)
+        if (gSaveFile.inventory[i].count > 0)
         {
-            int icon = itemIconTable[inventory[i].type];
+            int icon = itemIconTable[gSaveFile.inventory[i].type];
             int iconX = x + i * INVENTORY_TILE_WIDTH + iconOffsetX;
             int iconY = y + iconOffsetY;
             
@@ -107,8 +107,8 @@ void inventory_draw(void)
     text_init();
     for (int i = 0; i < NUM_ITEM_SLOTS; i++)
     {
-        if (inventory[i].count > 0)
-            text_draw_string_formatted(x + i * INVENTORY_TILE_WIDTH, y, 0, "%i", inventory[i].count);
+        if (gSaveFile.inventory[i].count > 0)
+            text_draw_string_formatted(x + i * INVENTORY_TILE_WIDTH, y, 0, "%i", gSaveFile.inventory[i].count);
     }
     
     //Draw selection rectangle
@@ -122,9 +122,9 @@ void inventory_add_block(int type)
     //Check to see if a slot with the item already exists
     for (int i = 0; i < NUM_ITEM_SLOTS; i++)
     {
-        if (inventory[i].type == type && inventory[i].count < 99)
+        if (gSaveFile.inventory[i].type == type && gSaveFile.inventory[i].count < 99)
         {
-            inventory[i].count++;
+            gSaveFile.inventory[i].count++;
             return;
         }
     }
@@ -132,10 +132,10 @@ void inventory_add_block(int type)
     //Check for an empty slot
     for (int i = 0; i < NUM_ITEM_SLOTS; i++)
     {
-        if (inventory[i].count == 0)
+        if (gSaveFile.inventory[i].count == 0)
         {
-            inventory[i].type = type;
-            inventory[i].count = 1;
+            gSaveFile.inventory[i].type = type;
+            gSaveFile.inventory[i].count = 1;
             return;
         }
     }
@@ -143,17 +143,6 @@ void inventory_add_block(int type)
 
 void inventory_init(void)
 {
-    memset(inventory, 0, sizeof(inventory));
-    inventory[0].type = BLOCK_STONE;
-    inventory[0].count = 99;
-    inventory[1].type = BLOCK_DIRT;
-    inventory[1].count = 99;
-    inventory[2].type = BLOCK_GRASS;
-    inventory[2].count = 99;
-    inventory[3].type = BLOCK_WOOD;
-    inventory[3].count = 99;
-    inventory[4].type = BLOCK_SAND;
-    inventory[4].count = 99;
     inventorySelection = 0;
 }
 

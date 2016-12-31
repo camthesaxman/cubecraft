@@ -298,6 +298,7 @@ static void newgame_menu_main(void)
                 gSaveFile.spawnZ = 5;
                 gSaveFile.modifiedChunks = NULL;
                 gSaveFile.modifiedChunksCount = 0;
+                memset(gSaveFile.inventory, 0, sizeof(gSaveFile.inventory));
                 file_save_world();
                 assert(strlen(gSaveFile.name) > 0);
                 assert(strlen(gSaveFile.seed) > 0);
