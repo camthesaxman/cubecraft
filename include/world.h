@@ -49,7 +49,7 @@ struct ChunkModification
 
 struct SaveFile;
 
-void world_init(struct SaveFile *save);
+void world_init(void);
 void world_load_textures(void);
 void world_close(void);
 struct Chunk *world_get_chunk(int x, int z);

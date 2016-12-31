@@ -53,7 +53,6 @@ static bool selectedBlockActive;
 static struct Vec3i selectedBlockPos;
 static struct Vec3i selectedBlockFace;
 static bool showDebugInfo;
-static struct SaveFile *currentSave;
 
 static struct MenuItem pauseMenuItems[] = {
     {"Continue"},
@@ -95,10 +94,10 @@ static void pause_menu_main(void)
             break;
         case 1: //Quit
             //Spawn at the current location next time
-            currentSave->spawnX = floorf(playerPosition.x);
-            currentSave->spawnY = floorf(playerPosition.y);
-            currentSave->spawnZ = floorf(playerPosition.z);
-            file_log("menu_process_input(): exiting world. position: %i, %i, %i", currentSave->spawnX, currentSave->spawnY, currentSave->spawnZ);
+            gSaveFile.spawnX = floorf(playerPosition.x);
+            gSaveFile.spawnY = floorf(playerPosition.y);
+            gSaveFile.spawnZ = floorf(playerPosition.z);
+            file_log("menu_process_input(): exiting world. position: %i, %i, %i", gSaveFile.spawnX, gSaveFile.spawnY, gSaveFile.spawnZ);
             world_close();
             menu_wait_close_anim(title_screen_init);
             break;
@@ -667,28 +666,27 @@ static void field_draw(void)
             text_draw_string(50, 82, 0, "Selected block: none");
         text_draw_string_formatted(50, 98, 0, "State: %s, yVelocity = %.2f", get_state_text(), yVelocity);
         text_draw_string_formatted(50, 114, 0, "FPS: %i", gFramesPerSecond);
-        text_draw_string_formatted(50, 130, 0, "World: %s, Seed: %s", currentSave->name, currentSave->seed);
+        text_draw_string_formatted(50, 130, 0, "World: %s, Seed: %s", gSaveFile.name, gSaveFile.seed);
     }
     draw_crosshair();
 }
 
-void field_init(struct SaveFile *save)
+void field_init(void)
 {
     struct Chunk *chunk;
     int x, y, z;
     
-    currentSave = save;
-    world_init(save);
-    file_log("field_init(): starting at position: %i, %i", save->spawnX, save->spawnZ);
-    playerPosition.x = save->spawnX;
-    playerPosition.z = save->spawnZ;
+    world_init();
+    file_log("field_init(): starting at position: %i, %i", gSaveFile.spawnX, gSaveFile.spawnZ);
+    playerPosition.x = gSaveFile.spawnX;
+    playerPosition.z = gSaveFile.spawnZ;
     yaw = 0.0;
     pitch = 0.0;
     chunk = world_get_chunk_containing(playerPosition.x, playerPosition.z);
     x = (unsigned int)floor(playerPosition.x) % CHUNK_WIDTH;
     z = (unsigned int)floor(playerPosition.z) % CHUNK_WIDTH;
     
-    for (y = save->spawnY; y >= 0; y--)
+    for (y = gSaveFile.spawnY; y >= 0; y--)
     {
         if (BLOCK_IS_SOLID(chunk->blocks[x][y][z]))
         {

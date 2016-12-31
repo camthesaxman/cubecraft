@@ -85,8 +85,6 @@ static struct Menu eraseconfirmMenu = {
     ARRAY_LENGTH(eraseconfirmMenuItems),
 };
 
-static struct SaveFile saveFile;
-
 static void main_menu_init(void);
 static void files_menu_init(void);
 static void newgame_menu_init(void);
@@ -145,8 +143,8 @@ static void startgame_menu_main(void)
     {
         case 0:  //Start!
             assert(strlen(saveFiles[fileNum]) > 0);
-            file_load_world(&saveFile, saveFiles[fileNum]);
-            field_init(&saveFile);
+            file_load_world(saveFiles[fileNum]);
+            field_init();
             break;
         case 1:  //Erase File
             menu_wait_close_anim(eraseconfirm_menu_init);
@@ -206,8 +204,8 @@ static void name_kb_main(void)
                 file_enumerate(check_if_already_exists);
                 if (!menu_msgbox_is_open())
                 {
-                    memset(saveFile.name, '\0', sizeof(saveFile.name));
-                    strcpy(saveFile.name, nameKeyboardBuffer);
+                    memset(gSaveFile.name, '\0', sizeof(gSaveFile.name));
+                    strcpy(gSaveFile.name, nameKeyboardBuffer);
                     newgame_menu_init();
                 }
                 break;
@@ -229,7 +227,7 @@ static void name_kb_draw(void)
 static void name_kb_init(void)
 {
     memset(nameKeyboardBuffer, '\0', sizeof(nameKeyboardBuffer));
-    strcpy(nameKeyboardBuffer, saveFile.name);
+    strcpy(nameKeyboardBuffer, gSaveFile.name);
     keyboard_init("Enter World Name", nameKeyboardBuffer, ARRAY_LENGTH(nameKeyboardBuffer));
     set_main_callback(name_kb_main);
     set_draw_callback(name_kb_draw);
@@ -240,8 +238,8 @@ static void seed_kb_main(void)
     switch (keyboard_process_input())
     {
         case KEYBOARD_OK:
-            memset(saveFile.seed, '\0', sizeof(saveFile.seed));
-            strcpy(saveFile.seed, seedKeyboardBuffer);
+            memset(gSaveFile.seed, '\0', sizeof(gSaveFile.seed));
+            strcpy(gSaveFile.seed, seedKeyboardBuffer);
             newgame_menu_init();
             break;
         case KEYBOARD_CANCEL:
@@ -260,7 +258,7 @@ static void seed_kb_draw(void)
 static void seed_kb_init(void)
 {
     memset(seedKeyboardBuffer, '\0', sizeof(seedKeyboardBuffer));
-    strcpy(seedKeyboardBuffer, saveFile.seed);
+    strcpy(seedKeyboardBuffer, gSaveFile.seed);
     keyboard_init("Enter World Seed", seedKeyboardBuffer, ARRAY_LENGTH(seedKeyboardBuffer));
     set_main_callback(seed_kb_main);
     set_draw_callback(seed_kb_draw);
@@ -283,28 +281,27 @@ static void newgame_menu_main(void)
                 menu_wait_close_anim(seed_kb_init);
                 break;
             case 2:  //Start!
-                if (strlen(saveFile.name) == 0)
+                if (strlen(gSaveFile.name) == 0)
                 {
                     menu_msgbox_init("You must enter a name.");
                     break;
                 }
-                if (strlen(saveFile.seed) == 0)
+                if (strlen(gSaveFile.seed) == 0)
                 {
                     menu_msgbox_init("You must enter a seed.");
                     break;
                 }
                 
                 //Initialize player's starting position
-                saveFile.spawnX = 5;
-                saveFile.spawnY = 200;
-                saveFile.spawnZ = 5;
-                saveFile.modifiedChunks = NULL;
-                saveFile.modifiedChunksCount = 0;
-                
-                file_save_world(&saveFile);
-                assert(strlen(saveFile.name) > 0);
-                assert(strlen(saveFile.seed) > 0);
-                field_init(&saveFile);
+                gSaveFile.spawnX = 5;
+                gSaveFile.spawnY = 200;
+                gSaveFile.spawnZ = 5;
+                gSaveFile.modifiedChunks = NULL;
+                gSaveFile.modifiedChunksCount = 0;
+                file_save_world();
+                assert(strlen(gSaveFile.name) > 0);
+                assert(strlen(gSaveFile.seed) > 0);
+                field_init();
                 break;
             case MENU_CANCEL:
             case 3:  //Back
@@ -347,8 +344,8 @@ static void files_menu_main(void)
     {
         if (saveFiles[item][0] == '\0')  //This is an empty save file slot
         {
-            memset(saveFile.name, '\0', sizeof(saveFile.name));
-            memset(saveFile.seed, '\0', sizeof(saveFile.seed));
+            memset(gSaveFile.name, '\0', sizeof(gSaveFile.name));
+            memset(gSaveFile.seed, '\0', sizeof(gSaveFile.seed));
             menu_wait_close_anim(newgame_menu_init);
         }
         else

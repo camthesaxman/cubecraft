@@ -3,6 +3,6 @@
 
 struct SaveFile;
 
-void field_init(struct SaveFile *save);
+void field_init(void);
 
 #endif //GUARD_FIELD_H

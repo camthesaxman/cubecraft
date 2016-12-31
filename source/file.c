@@ -2,11 +2,13 @@
 #include "file.h"
 #include "world.h"
 
+//TODO: Use actual error handling rather than assert
+
 #define CHUNK_MOD_SIZE (4 * sizeof(uint32_t))
 
 typedef unsigned char byte;
 
-//TODO: Use actual error handling rather than assert
+struct SaveFile gSaveFile;
 
 static const char fileMagic[] = "CUBECRAFTvALPHA";
 static const char savePath[] = "/apps/cubecraft/worlds";
@@ -256,7 +258,7 @@ void file_enumerate(bool (*callback)(const char *filename))
     closedir(saveDir);
 }
 
-void file_load_world(struct SaveFile *save, const char *name)
+void file_load_world(const char *name)
 {
     char *path = malloc(strlen(savePath) + 1 + strlen(name) + 1);
     FILE *file;
@@ -275,31 +277,31 @@ void file_load_world(struct SaveFile *save, const char *name)
     fseek(file, 0, SEEK_SET);
     buffer = calloc(size, 1);
     fread(buffer, 1, size, file);
-    read_save(save, buffer, size);
+    read_save(&gSaveFile, buffer, size);
     free(buffer);
     fclose(file);
 }
 
-void file_save_world(struct SaveFile *save)
+void file_save_world(void)
 {
-    char *path = malloc(strlen(savePath) + 1 + strlen(save->name) + 1);
+    char *path = malloc(strlen(savePath) + 1 + strlen(gSaveFile.name) + 1);
     FILE *file;
     size_t size;
     byte *buffer;
     
-    assert(strlen(save->name) > 0);
-    assert(strlen(save->seed) > 0);
+    assert(strlen(gSaveFile.name) > 0);
+    assert(strlen(gSaveFile.seed) > 0);
     strcpy(path, savePath);
     strcat(path, "/");
-    strcat(path, save->name);
+    strcat(path, gSaveFile.name);
     
-    file_log("file_save_world(): saving world '%s' to file '%s'", save->name, path);
+    file_log("file_save_world(): saving world '%s' to file '%s'", gSaveFile.name, path);
     
-    size = calc_save_size(save);
+    size = calc_save_size(&gSaveFile);
     buffer = malloc(size);
     file = fopen(path, "w");
     assert(file != NULL);
-    write_save(save, buffer, size);
+    write_save(&gSaveFile, buffer, size);
     fwrite(buffer, size, 1, file);
     free(buffer);
     fclose(file);
@@ -452,10 +454,8 @@ void file_save_world(struct SaveFile *save)
 
 void file_delete(const char *name)
 {
-    /*
     file_log("deleting file '%s'", name);
     CARD_Delete(CARD_SLOTA, name);
-    */
 }
 
 #endif

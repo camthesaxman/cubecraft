@@ -19,12 +19,14 @@ struct SaveFile
     int modifiedChunksCount;
 };
 
+extern struct SaveFile gSaveFile;
+
 void file_init(void);
 void file_log(const char *fmt, ...);
 void file_enumerate(bool (*callback)(const char *filename));
 void file_create(const char *name);
 void file_delete(const char *name);
-void file_load_world(struct SaveFile *saveFile, const char *name);
-void file_save_world(struct SaveFile *saveFile);
+void file_load_world(const char *name);
+void file_save_world(void);
 
 #endif //GUARD_FILE_H

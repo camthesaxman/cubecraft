@@ -73,7 +73,6 @@ static int facesListCapacity;
 static TPLFile blocksTPL;
 static GXTexObj blocksTexture;
 
-struct SaveFile *currentSave;
 static u16 worldSeed;
 static struct Chunk chunkTable[CHUNK_TABLE_WIDTH][CHUNK_TABLE_WIDTH];
 
@@ -245,10 +244,10 @@ static void load_chunk_changes(struct Chunk *chunk)
     chunk->modificationIndex = -1;
     
     //Search the save file for modifications to this chunk
-    for (int i = 0; i < currentSave->modifiedChunksCount; i++)
+    for (int i = 0; i < gSaveFile.modifiedChunksCount; i++)
     {
-        if (currentSave->modifiedChunks[i].x == chunk->x
-         && currentSave->modifiedChunks[i].z == chunk->z)
+        if (gSaveFile.modifiedChunks[i].x == chunk->x
+         && gSaveFile.modifiedChunks[i].z == chunk->z)
         {
             chunk->modificationIndex = i;
             break;
@@ -259,7 +258,7 @@ static void load_chunk_changes(struct Chunk *chunk)
         return;  //Chunk was not modified
     
     file_log("load_chunk_changes(): applying chunk changes for chunk %i, %i", chunk->x, chunk->z);
-    mod = &currentSave->modifiedChunks[chunk->modificationIndex];
+    mod = &gSaveFile.modifiedChunks[chunk->modificationIndex];
     for (int i = 0; i < mod->modifiedBlocksCount; i++)
     {
         struct BlockModification *blockMod = &mod->modifiedBlocks[i];
@@ -356,30 +355,30 @@ static void add_block_modification(struct Chunk *chunk, int x, int y, int z, int
     struct ChunkModification *mod;
     
     //Ensure this chunk is in the list
-    for (i = 0; i < currentSave->modifiedChunksCount; i++)
+    for (i = 0; i < gSaveFile.modifiedChunksCount; i++)
     {
-        if (currentSave->modifiedChunks[i].x == chunk->x
-         && currentSave->modifiedChunks[i].z == chunk->z)
+        if (gSaveFile.modifiedChunks[i].x == chunk->x
+         && gSaveFile.modifiedChunks[i].z == chunk->z)
             break;
     }
     
-    if (i == currentSave->modifiedChunksCount)
+    if (i == gSaveFile.modifiedChunksCount)
     {
         //Doesn't exist. Let's create it
         assert(chunk->modificationIndex == -1);
         chunk->modificationIndex = i;
-        currentSave->modifiedChunks = realloc(currentSave->modifiedChunks,
-                                              (currentSave->modifiedChunksCount + 1) * sizeof(struct ChunkModification));
-        currentSave->modifiedChunks[i].x = chunk->x;
-        currentSave->modifiedChunks[i].z = chunk->z;
-        currentSave->modifiedChunks[i].modifiedBlocks = NULL;
-        currentSave->modifiedChunks[i].modifiedBlocksCount = 0;
-        currentSave->modifiedChunksCount++;
+        gSaveFile.modifiedChunks = realloc(gSaveFile.modifiedChunks,
+                                              (gSaveFile.modifiedChunksCount + 1) * sizeof(struct ChunkModification));
+        gSaveFile.modifiedChunks[i].x = chunk->x;
+        gSaveFile.modifiedChunks[i].z = chunk->z;
+        gSaveFile.modifiedChunks[i].modifiedBlocks = NULL;
+        gSaveFile.modifiedChunks[i].modifiedBlocksCount = 0;
+        gSaveFile.modifiedChunksCount++;
     }
     
     //Add the block modification
     assert(chunk->modificationIndex != -1);
-    mod = &currentSave->modifiedChunks[chunk->modificationIndex];
+    mod = &gSaveFile.modifiedChunks[chunk->modificationIndex];
     
     mod->modifiedBlocks = realloc(mod->modifiedBlocks, (mod->modifiedBlocksCount + 1) * sizeof(struct BlockModification));
     mod->modifiedBlocks[mod->modifiedBlocksCount].x = x;
@@ -683,22 +682,21 @@ void world_render_chunks_at(float x, float z)
 // Setup Functions
 //==================================================
 
-void world_init(struct SaveFile *save)
+void world_init(void)
 {
-    currentSave = save;
-    assert(save->name != NULL);
+    assert(gSaveFile.name != NULL);
     memset(chunkTable, 0, sizeof(chunkTable));
     
     //Hash the seed string.
     worldSeed = 0;
-    for (char *c = save->seed; *c != '\0'; c++)
+    for (char *c = gSaveFile.seed; *c != '\0'; c++)
     {
-        int shift = ((c - save->seed) % sizeof(u16)) * CHAR_BIT;
+        int shift = ((c - gSaveFile.seed) % sizeof(u16)) * CHAR_BIT;
         
         worldSeed |= *c << shift;
     }
     file_log("world_init(): starting world. name = '%s', seed = '%s', spawn = (%i, %i, %i), modifiedChunksCount = %i",
-      save->name, save->seed, save->spawnX, save->spawnY, save->spawnZ, save->modifiedChunksCount);
+      gSaveFile.name, gSaveFile.seed, gSaveFile.spawnX, gSaveFile.spawnY, gSaveFile.spawnZ, gSaveFile.modifiedChunksCount);
 }
 
 void world_load_textures(void)
@@ -712,9 +710,9 @@ void world_load_textures(void)
 
 void world_close(void)
 {
-    assert(currentSave->name != NULL);
-    file_log("world_close(): saving world '%s'", currentSave->name);
-    file_save_world(currentSave);
+    assert(gSaveFile.name != NULL);
+    file_log("world_close(): saving world '%s'", gSaveFile.name);
+    file_save_world();
     
     for (int i = 0; i < CHUNK_TABLE_WIDTH; i++)
     {
