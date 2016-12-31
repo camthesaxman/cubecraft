@@ -397,7 +397,10 @@ static void apply_motion_vector(struct Vec3f motion)
         if (collided)
         {
             if (motion.y < 0.0)
+            {
+                newPosition.y = y + 1;
                 state = STANDING;
+            }
             yVelocity = 0.0;
         }
         else
@@ -431,66 +434,6 @@ static void apply_motion_vector(struct Vec3f motion)
         }
     }
 }
-
-/*
-//TODO: This collision check can be improved.
-static void apply_motion_vector(struct Vec3f motion)
-{
-    //Clamp fall speed to avoid tunneling problem on large falls. This should be very rare.
-    if (motion.y < -1.0)
-        motion.y = -1.0;
-    
-    if (motion.x > 0.0)
-    {
-        if (BLOCK_IS_SOLID(world_get_block_at(playerPosition.x + motion.x + PLAYER_RADIUS, playerPosition.y, playerPosition.z)))
-            motion.x = 0;
-    }
-    else if (motion.x < 0.0)
-    {
-        if (BLOCK_IS_SOLID(world_get_block_at(playerPosition.x + motion.x - PLAYER_RADIUS, playerPosition.y, playerPosition.z)))
-            motion.x = 0;
-    }
-    
-    if (motion.y > 0.0)
-    {
-        //TODO: Implement later when we are able to test this.
-        assert(state == MIDAIR);
-    }
-    else if (motion.y < 0.0) //Player hit the ground
-    {
-        assert(state == MIDAIR);
-        if (BLOCK_IS_SOLID(world_get_block_at(playerPosition.x, playerPosition.y + motion.y, playerPosition.z)))
-        {
-            state = STANDING;
-            yVelocity = 0;
-            motion.y = 0;
-        }
-    }
-    
-    if (motion.z > 0.0)
-    {
-        if (BLOCK_IS_SOLID(world_get_block_at(playerPosition.x, playerPosition.y, playerPosition.z + motion.z + PLAYER_RADIUS)))
-            motion.z = 0;
-    }
-    else if (motion.z < 0.0)
-    {
-        if (BLOCK_IS_SOLID(world_get_block_at(playerPosition.x, playerPosition.y, playerPosition.z + motion.z - PLAYER_RADIUS)))
-            motion.z = 0;
-    }
-    
-    playerPosition.x += motion.x;
-    playerPosition.y += motion.y;
-    playerPosition.z += motion.z;
-    
-    if (state == STANDING)
-    {
-        if (!BLOCK_IS_SOLID(world_get_block_at(playerPosition.x, playerPosition.y - 1.0, playerPosition.z)))
-        {
-            state = MIDAIR;
-        }
-    }
-}
-*/
 
 static int analog_stick_clamp(int value, int deadzone)
 {
