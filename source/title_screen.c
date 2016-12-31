@@ -7,6 +7,7 @@
 #include "menu.h"
 #include "text.h"
 #include "title_screen.h"
+#include "version.h"
 #include "world.h"
 
 #define MAX_SAVE_FILES 5
@@ -100,6 +101,14 @@ static void draw_title_banner(void)
     drawing_draw_textured_rect(x, y, TITLE_BANNER_WIDTH, TITLE_BANNER_HEIGHT);
 }
 
+static void draw_version_copyright(void)
+{
+    text_init();
+    text_set_font_size(8, 16);
+    text_draw_string(gDisplayWidth / 2, 400, TEXT_HCENTER, "Version "VERSION);
+    text_draw_string(gDisplayWidth / 2, 416, TEXT_HCENTER, "Copyright (C) 2016 Cameron Hall (camthesaxman)");
+}
+
 //==================================================
 // Start Game Menu
 //==================================================
@@ -119,6 +128,7 @@ static void eraseconfirm_menu_main(void)
 static void eraseconfirm_menu_draw(void)
 {
     draw_title_banner();
+    draw_version_copyright();
     menu_draw();
 }
 
@@ -151,6 +161,7 @@ static void startgame_menu_main(void)
 static void startgame_menu_draw(void)
 {
     draw_title_banner();
+    draw_version_copyright();
     menu_draw();
 }
 
@@ -210,6 +221,7 @@ static void name_kb_main(void)
 static void name_kb_draw(void)
 {
     draw_title_banner();
+    draw_version_copyright();
     keyboard_draw();
     menu_draw();
 }
@@ -241,6 +253,7 @@ static void seed_kb_main(void)
 static void seed_kb_draw(void)
 {
     draw_title_banner();
+    draw_version_copyright();
     keyboard_draw();
 }
 
@@ -304,6 +317,7 @@ static void newgame_menu_main(void)
 static void newgame_menu_draw(void)
 {
     draw_title_banner();
+    draw_version_copyright();
     menu_draw();
 }
 
@@ -348,6 +362,7 @@ static void files_menu_main(void)
 static void files_menu_draw(void)
 {
     draw_title_banner();
+    draw_version_copyright();
     menu_draw();
 }
 
@@ -413,6 +428,7 @@ static void main_menu_main(void)
 static void main_menu_draw(void)
 {
     draw_title_banner();
+    draw_version_copyright();
     menu_draw();
 }
 
@@ -436,10 +452,11 @@ static void title_screen_main(void)
 static void title_screen_draw(void)
 {
     draw_title_banner();
+    draw_version_copyright();
     if (!(pressStartBlinkCounter & 0x20))
     {
-        text_init();
-        text_draw_string(gDisplayWidth / 2, 300, true, "Press Start");
+        text_set_font_size(16, 32);
+        text_draw_string(gDisplayWidth / 2, 300, TEXT_HCENTER, "Press Start");
     }
     pressStartBlinkCounter++;
 }
@@ -447,7 +464,6 @@ static void title_screen_draw(void)
 void title_screen_init(void)
 {
     drawing_set_2d_mode();
-    text_set_font_size(16, 32);
     set_main_callback(title_screen_main);
     set_draw_callback(title_screen_draw);
     pressStartBlinkCounter = 0;
