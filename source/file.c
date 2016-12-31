@@ -326,7 +326,6 @@ void file_delete(const char *name)
 
 static const char gameCode[] = "CCRA";
 static const char makerCode[] = "00";
-static u8 sysWorkArea[CARD_WORKAREA] ATTRIBUTE_ALIGN(32);
 
 static void card_remove_callback(s32 channel, s32 result)
 {
@@ -343,6 +342,7 @@ static void card_remove_callback(s32 channel, s32 result)
 void file_init(void)
 {
     s32 status;
+    u8 *sysWorkArea;
     
     //Temporary: remove logging capabilities when we actually run on the GameCube
     assert(fatInitDefault());
@@ -351,10 +351,9 @@ void file_init(void)
     
     status = CARD_Init(gameCode, makerCode);
     file_log("CARD_Init returned %i", status);
-    /*
+    sysWorkArea = memalign(32, CARD_WORKAREA);
     status = CARD_Mount(CARD_SLOTA, sysWorkArea, card_remove_callback);
     file_log("CARD_Mount returned %i", status);
-    */
 }
 
 void file_log(const char *fmt, ...)
