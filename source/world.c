@@ -697,6 +697,8 @@ void world_init(struct SaveFile *save)
         
         worldSeed |= *c << shift;
     }
+    file_log("world_init(): starting world. name = '%s', seed = '%s', spawn = (%i, %i, %i), modifiedChunksCount = %i",
+      save->name, save->seed, save->spawnX, save->spawnY, save->spawnZ, save->modifiedChunksCount);
 }
 
 void world_load_textures(void)

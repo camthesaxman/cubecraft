@@ -285,7 +285,6 @@ static void newgame_menu_main(void)
                 saveFile.modifiedChunksCount = 0;
                 
                 file_save_world(&saveFile);
-                //file_load_world(&saveFile, saveFile.name);
                 assert(strlen(saveFile.name) > 0);
                 assert(strlen(saveFile.seed) > 0);
                 field_init(&saveFile);

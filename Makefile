@@ -32,8 +32,10 @@ INCLUDES	:=	include
 
 CFLAGS	= -g -O2 -std=gnu11 -Wall -pedantic $(MACHDEP) $(INCLUDE)
 
-ifeq ($(PLATFORM),"wii")
+ifeq ($(PLATFORM),wii)
   CFLAGS += -DPLATFORM_WII
+else
+  CFLAGS += -DPLATFORM_GAMECUBE
 endif
 
 CXXFLAGS	=	$(CFLAGS)
