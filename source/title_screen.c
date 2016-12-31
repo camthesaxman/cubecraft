@@ -24,7 +24,11 @@ static unsigned int pressStartBlinkCounter;
 
 static struct MenuItem mainMenuItems[] = {
     {"Start Game"},
+#if defined(PLATFORM_WII)
     {"Exit to Homebrew Channel"},
+#elif defined(PLATFORM_GAMECUBE)
+    {"Reset GameCube"},
+#endif
 };
 
 static struct Menu mainMenu = {
