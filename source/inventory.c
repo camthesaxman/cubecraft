@@ -122,7 +122,8 @@ void inventory_add_block(int type)
     //Check to see if a slot with the item already exists
     for (int i = 0; i < NUM_ITEM_SLOTS; i++)
     {
-        if (gSaveFile.inventory[i].type == type && gSaveFile.inventory[i].count < 99)
+        if (gSaveFile.inventory[i].type == type
+         && gSaveFile.inventory[i].count > 0 && gSaveFile.inventory[i].count < 99)
         {
             gSaveFile.inventory[i].count++;
             return;
