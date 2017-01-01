@@ -90,6 +90,8 @@ static void files_menu_init(void);
 static void newgame_menu_init(void);
 static void startgame_menu_init(void);
 
+float bkgndAngle = 0.0;
+
 static void draw_title_banner(void)
 {
     int x = (gDisplayWidth - TITLE_BANNER_WIDTH) / 2;
@@ -107,12 +109,41 @@ static void draw_version_copyright(void)
     text_draw_string(gDisplayWidth / 2, 416, TEXT_HCENTER, "Copyright (C) 2016 Cameron Hall (camthesaxman)");
 }
 
+static void draw_title_background(void)
+{
+    Mtx posMtx;
+    Mtx rotMtx;
+    guVector axis;
+    
+    drawing_set_3d_mode();
+    guMtxIdentity(posMtx);
+    axis = (guVector){0.0, 1.0, 0.0};
+    guMtxRotAxisDeg(rotMtx, &axis, bkgndAngle);
+    guMtxApplyTrans(posMtx, posMtx, 0.0, -70.0, 0.0);
+    guMtxConcat(rotMtx, posMtx, posMtx);
+    GX_LoadPosMtxImm(posMtx, GX_PNMTX0);
+    world_render_chunks_at(0, 0);
+    
+    drawing_set_2d_mode();
+    draw_title_banner();
+    draw_version_copyright();
+}
+
+static void update_title_background(void)
+{
+    bkgndAngle += 0.05;
+    if (bkgndAngle >= 360.0)
+        bkgndAngle = 0.0;
+}
+
 //==================================================
 // Start Game Menu
 //==================================================
 
 static void eraseconfirm_menu_main(void)
 {
+    update_title_background();
+    
     switch (menu_process_input())
     {
         case 0:  //Yes
@@ -125,8 +156,7 @@ static void eraseconfirm_menu_main(void)
 
 static void eraseconfirm_menu_draw(void)
 {
-    draw_title_banner();
-    draw_version_copyright();
+    draw_title_background();
     menu_draw();
 }
 
@@ -139,6 +169,8 @@ static void eraseconfirm_menu_init(void)
 
 static void startgame_menu_main(void)
 {
+    update_title_background();
+    
     switch (menu_process_input())
     {
         case 0:  //Start!
@@ -158,8 +190,7 @@ static void startgame_menu_main(void)
 
 static void startgame_menu_draw(void)
 {
-    draw_title_banner();
-    draw_version_copyright();
+    draw_title_background();
     menu_draw();
 }
 
@@ -192,6 +223,8 @@ static bool check_if_already_exists(const char *name)
 
 static void name_kb_main(void)
 {
+    update_title_background();
+    
     if (menu_msgbox_is_open())
     {
         menu_msgbox_process_input();
@@ -218,8 +251,7 @@ static void name_kb_main(void)
 
 static void name_kb_draw(void)
 {
-    draw_title_banner();
-    draw_version_copyright();
+    draw_title_background();
     keyboard_draw();
     menu_draw();
 }
@@ -235,6 +267,8 @@ static void name_kb_init(void)
 
 static void seed_kb_main(void)
 {
+    update_title_background();
+    
     switch (keyboard_process_input())
     {
         case KEYBOARD_OK:
@@ -250,8 +284,7 @@ static void seed_kb_main(void)
 
 static void seed_kb_draw(void)
 {
-    draw_title_banner();
-    draw_version_copyright();
+    draw_title_background();
     keyboard_draw();
 }
 
@@ -266,6 +299,8 @@ static void seed_kb_init(void)
 
 static void newgame_menu_main(void)
 {
+    update_title_background();
+    
     if (menu_msgbox_is_open())
     {
         menu_msgbox_process_input();
@@ -314,8 +349,7 @@ static void newgame_menu_main(void)
 
 static void newgame_menu_draw(void)
 {
-    draw_title_banner();
-    draw_version_copyright();
+    draw_title_background();
     menu_draw();
 }
 
@@ -332,11 +366,13 @@ static void newgame_menu_init(void)
 
 static void files_menu_main(void)
 {
-    int item = menu_process_input();
+    int item;
     
+    update_title_background();
+    
+    item = menu_process_input();
     if (item == MENU_NORESULT)
         return;
-    
     if (item == MAX_SAVE_FILES || item == MENU_CANCEL)  //Back
     {
         menu_wait_close_anim(main_menu_init);
@@ -359,8 +395,7 @@ static void files_menu_main(void)
 
 static void files_menu_draw(void)
 {
-    draw_title_banner();
-    draw_version_copyright();
+    draw_title_background();
     menu_draw();
 }
 
@@ -409,6 +444,8 @@ static void files_menu_init(void)
 
 static void main_menu_main(void)
 {
+    update_title_background();
+    
     switch (menu_process_input())
     {
         case MENU_CANCEL:
@@ -425,8 +462,7 @@ static void main_menu_main(void)
 
 static void main_menu_draw(void)
 {
-    draw_title_banner();
-    draw_version_copyright();
+    draw_title_background();
     menu_draw();
 }
 
@@ -443,14 +479,14 @@ static void main_menu_init(void)
 
 static void title_screen_main(void)
 {
+    update_title_background();
     if (gControllerPressedKeys & PAD_BUTTON_START)
         main_menu_init();
 }
 
 static void title_screen_draw(void)
 {
-    draw_title_banner();
-    draw_version_copyright();
+    draw_title_background();
     if (!(pressStartBlinkCounter & 0x20))
     {
         text_set_font_size(16, 32);
@@ -461,6 +497,12 @@ static void title_screen_draw(void)
 
 void title_screen_init(void)
 {
+    //initialize background world
+    strcpy(gSaveFile.seed, "12345");
+    gSaveFile.modifiedChunks = NULL;
+    gSaveFile.modifiedChunksCount = 0;
+    world_init();
+    
     drawing_set_2d_mode();
     set_main_callback(title_screen_main);
     set_draw_callback(title_screen_draw);
