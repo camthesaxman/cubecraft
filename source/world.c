@@ -263,7 +263,6 @@ static void load_chunk_changes(struct Chunk *chunk)
     {
         struct BlockModification *blockMod = &mod->modifiedBlocks[i];
         
-        //file_log("load_chunk_changes(): changing block %i, %i, %i", blockMod->x, blockMod->y, blockMod->z);
         assert(blockMod->x >= 0);
         assert(blockMod->x < CHUNK_WIDTH);
         assert(blockMod->y >= 0);
@@ -276,7 +275,6 @@ static void load_chunk_changes(struct Chunk *chunk)
 
 static void create_chunk(struct Chunk *chunk, int x, int z)
 {
-    printf("generating chunk (%i, %i)\n", x, z);
     chunk->active = true;
     chunk->x = x;
     chunk->z = z;
@@ -286,7 +284,6 @@ static void create_chunk(struct Chunk *chunk, int x, int z)
 
 static void delete_chunk(struct Chunk *chunk)
 {
-    printf("deleting chunk (%i, %i)\n", chunk->x, chunk->z);
     chunk->active = false;
     free(chunk->dispList);
     chunk->dispList = NULL;

@@ -376,6 +376,5 @@ int keyboard_process_input(void)
         selectedKeyX = MIN(selectedKeyX, keyboard[selectedKeyY].nKeys - 1);
     }
     
-    printf("selected key: %i, %i\n", selectedKeyX, selectedKeyY);
     return result;
 }
