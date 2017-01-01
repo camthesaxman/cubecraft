@@ -621,8 +621,8 @@ void field_init(void)
     
     world_init();
     file_log("field_init(): starting at position: %i, %i", gSaveFile.spawnX, gSaveFile.spawnZ);
-    playerPosition.x = gSaveFile.spawnX;
-    playerPosition.z = gSaveFile.spawnZ;
+    playerPosition.x = gSaveFile.spawnX + 0.5;
+    playerPosition.z = gSaveFile.spawnZ + 0.5;
     yaw = 0.0;
     pitch = 0.0;
     chunk = world_get_chunk_containing(playerPosition.x, playerPosition.z);
