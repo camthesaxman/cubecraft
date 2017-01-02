@@ -45,7 +45,7 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-ifeq ($(PLATFORM),"wii")
+ifeq ($(PLATFORM),wii)
   LIBS	:= -lfat -lwiiuse -lbte -logc -lm
 else
   LIBS	:= -lfat -logc -lm
