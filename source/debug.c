@@ -15,12 +15,15 @@ static void enter_text_mode(void)
     VIDEO_Init();
     videoMode = VIDEO_GetPreferredMode(NULL);
     framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(videoMode));
-    CON_InitEx(videoMode, 20, 30, videoMode->fbWidth - 40, videoMode->xfbHeight - 60);
+    //Why are xstart and ystart ignored?
+    CON_Init(framebuffer, 20, 30, videoMode->fbWidth, videoMode->xfbHeight, videoMode->fbWidth * VI_DISPLAY_PIX_SZ);
     VIDEO_Configure(videoMode);
     VIDEO_SetNextFramebuffer(framebuffer);
     VIDEO_SetBlack(FALSE);
     VIDEO_Flush();
     VIDEO_WaitVSync();
+    
+    printf("\n\n\n");  //Prevent text from being cut off on some TVs
 }
 
 static void pause(void)
