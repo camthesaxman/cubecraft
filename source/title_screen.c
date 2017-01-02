@@ -22,6 +22,7 @@
 static TPLFile titleTPL;
 static GXTexObj titleTexture;
 static unsigned int pressStartBlinkCounter;
+static bool initialized = false;
 
 static struct MenuItem mainMenuItems[] = {
     {"Start Game"},
@@ -85,6 +86,7 @@ static struct Menu eraseconfirmMenu = {
     ARRAY_LENGTH(eraseconfirmMenuItems),
 };
 
+static void start_title_screen(void);
 static void main_menu_init(void);
 static void files_menu_init(void);
 static void newgame_menu_init(void);
@@ -434,7 +436,7 @@ static void main_menu_main(void)
     switch (menu_process_input())
     {
         case MENU_CANCEL:
-            menu_wait_close_anim(title_screen_init);
+            menu_wait_close_anim(start_title_screen);
             break;
         case 0:  //Start Game
             menu_wait_close_anim(files_menu_init);
@@ -479,18 +481,25 @@ static void title_screen_draw(void)
     pressStartBlinkCounter++;
 }
 
-void title_screen_init(void)
+static void start_title_screen(void)
 {
+    drawing_set_2d_mode();
+    set_main_callback(title_screen_main);
+    set_draw_callback(title_screen_draw);
+    pressStartBlinkCounter = 0;
+}
+
+void title_screen_init(void)
+{    
     //initialize background world
     strcpy(gSaveFile.seed, "12345");
     gSaveFile.modifiedChunks = NULL;
     gSaveFile.modifiedChunksCount = 0;
     world_init();
+    start_title_screen();
     
-    drawing_set_2d_mode();
-    set_main_callback(title_screen_main);
-    set_draw_callback(title_screen_draw);
-    pressStartBlinkCounter = 0;
+    assert(initialized == false);
+    initialized = true;
 }
 
 void title_screen_load_textures(void)
