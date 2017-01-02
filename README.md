@@ -4,7 +4,7 @@ CubeCraft is a 3D infinite-world voxel engine for the Nintendo GameCube and Wii.
 ![Screenshot](http://i.imgur.com/KO1o4d5.png)
 
 ## Compiling
-Download DevKitPro and run `make` to compile. By default, it builds the GameCube version. To build the Wii version, run `make PLATFORM=wii`.
+Download and install devkitPPC from [here](https://sourceforge.net/projects/devkitpro/) and run `make` within the cubecraft directory to compile. By default, it builds the GameCube version. To build the Wii version, run `make PLATFORM=wii`.
 
 ## Installing
 
