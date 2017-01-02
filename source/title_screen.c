@@ -124,16 +124,13 @@ static void draw_title_background(void)
     GX_LoadPosMtxImm(posMtx, GX_PNMTX0);
     world_render_chunks_at(0, 0);
     
-    drawing_set_2d_mode();
-    draw_title_banner();
-    draw_version_copyright();
-}
-
-static void update_title_background(void)
-{
     bkgndAngle += 0.05;
     if (bkgndAngle >= 360.0)
         bkgndAngle = 0.0;
+    
+    drawing_set_2d_mode();
+    draw_title_banner();
+    draw_version_copyright();
 }
 
 //==================================================
@@ -142,8 +139,6 @@ static void update_title_background(void)
 
 static void eraseconfirm_menu_main(void)
 {
-    update_title_background();
-    
     switch (menu_process_input())
     {
         case 0:  //Yes
@@ -169,8 +164,6 @@ static void eraseconfirm_menu_init(void)
 
 static void startgame_menu_main(void)
 {
-    update_title_background();
-    
     switch (menu_process_input())
     {
         case 0:  //Start!
@@ -223,8 +216,6 @@ static bool check_if_already_exists(const char *name)
 
 static void name_kb_main(void)
 {
-    update_title_background();
-    
     if (menu_msgbox_is_open())
     {
         menu_msgbox_process_input();
@@ -267,8 +258,6 @@ static void name_kb_init(void)
 
 static void seed_kb_main(void)
 {
-    update_title_background();
-    
     switch (keyboard_process_input())
     {
         case KEYBOARD_OK:
@@ -299,8 +288,6 @@ static void seed_kb_init(void)
 
 static void newgame_menu_main(void)
 {
-    update_title_background();
-    
     if (menu_msgbox_is_open())
     {
         menu_msgbox_process_input();
@@ -367,8 +354,6 @@ static void newgame_menu_init(void)
 static void files_menu_main(void)
 {
     int item;
-    
-    update_title_background();
     
     item = menu_process_input();
     if (item == MENU_NORESULT)
@@ -444,8 +429,6 @@ static void files_menu_init(void)
 
 static void main_menu_main(void)
 {
-    update_title_background();
-    
     switch (menu_process_input())
     {
         case MENU_CANCEL:
@@ -479,7 +462,6 @@ static void main_menu_init(void)
 
 static void title_screen_main(void)
 {
-    update_title_background();
     if (gControllerPressedKeys & PAD_BUTTON_START)
         main_menu_init();
 }
