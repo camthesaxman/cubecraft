@@ -167,6 +167,7 @@ static void startgame_menu_main(void)
     switch (menu_process_input())
     {
         case 0:  //Start!
+            world_close();
             assert(strlen(saveFiles[fileNum]) > 0);
             file_load_world(saveFiles[fileNum]);
             field_init();
@@ -314,6 +315,7 @@ static void newgame_menu_main(void)
                     break;
                 }
                 
+                world_close();
                 //Initialize player's starting position
                 gSaveFile.spawnX = 5;
                 gSaveFile.spawnY = 200;

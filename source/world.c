@@ -706,11 +706,7 @@ void world_load_textures(void)
 }
 
 void world_close(void)
-{
-    assert(gSaveFile.name != NULL);
-    file_log("world_close(): saving world '%s'", gSaveFile.name);
-    file_save_world();
-    
+{   
     for (int i = 0; i < CHUNK_TABLE_WIDTH; i++)
     {
         for (int j = 0; j < CHUNK_TABLE_WIDTH; j++)

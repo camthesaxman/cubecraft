@@ -97,7 +97,7 @@ static void pause_menu_main(void)
             gSaveFile.spawnX = floorf(playerPosition.x);
             gSaveFile.spawnY = floorf(playerPosition.y);
             gSaveFile.spawnZ = floorf(playerPosition.z);
-            file_log("menu_process_input(): exiting world. position: %i, %i, %i", gSaveFile.spawnX, gSaveFile.spawnY, gSaveFile.spawnZ);
+            file_save_world();
             world_close();
             menu_wait_close_anim(title_screen_init);
             break;
