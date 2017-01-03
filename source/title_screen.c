@@ -22,7 +22,6 @@
 static TPLFile titleTPL;
 static GXTexObj titleTexture;
 static unsigned int pressStartBlinkCounter;
-static bool initialized = false;
 
 static struct MenuItem mainMenuItems[] = {
     {"Start Game"},
@@ -497,9 +496,6 @@ void title_screen_init(void)
     gSaveFile.modifiedChunksCount = 0;
     world_init();
     start_title_screen();
-    
-    assert(initialized == false);
-    initialized = true;
 }
 
 void title_screen_load_textures(void)
