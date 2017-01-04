@@ -66,9 +66,15 @@ struct Face
     struct Vertex vertexes[4];
 };
 
-static struct Face *facesList;
-static int facesListCount;
-static int facesListCapacity;
+struct FaceList
+{
+    struct Face *faces;
+    int count;
+    int capacity;
+};
+
+static struct FaceList opaqueFaces;
+static struct FaceList transparentFaces;
 
 static TPLFile blocksTPL;
 static GXTexObj blocksTexture;
@@ -285,8 +291,10 @@ static void create_chunk(struct Chunk *chunk, int x, int z)
 static void delete_chunk(struct Chunk *chunk)
 {
     chunk->active = false;
-    free(chunk->dispList);
-    chunk->dispList = NULL;
+    free(chunk->opaqueDispList);
+    free(chunk->transparentDispList);
+    chunk->opaqueDispList = NULL;
+    chunk->transparentDispList = NULL;
 }
 
 struct Chunk *world_get_chunk(int x, int z)
@@ -385,6 +393,13 @@ static void add_block_modification(struct Chunk *chunk, int x, int y, int z, int
     mod->modifiedBlocksCount++;
 }
 
+static void rebuild_chunk_display_list(struct Chunk *chunk)
+{
+    free(chunk->opaqueDispList);
+    free(chunk->transparentDispList);
+    build_chunk_display_list(chunk);
+}
+
 void world_set_block(int x, int y, int z, int type)
 {
     struct Chunk *chunk = world_get_chunk_containing(x, z);
@@ -393,37 +408,32 @@ void world_set_block(int x, int y, int z, int type)
     int blockZ = world_to_block_coord(z);
     
     chunk->blocks[blockX][blockY][blockZ] = type;
-    free(chunk->dispList);
-    build_chunk_display_list(chunk);
+    rebuild_chunk_display_list(chunk);
     
     //Patch up any leftover or newly exposed faces on chunk borders
     if (blockX == 0)
     {
         struct Chunk *neighborChunk = world_get_chunk(chunk->x - 1, chunk->z);
         
-        free(neighborChunk->dispList);
-        build_chunk_display_list(neighborChunk);
+        rebuild_chunk_display_list(neighborChunk);
     }
     else if (blockX == CHUNK_WIDTH - 1)
     {
         struct Chunk *neighborChunk = world_get_chunk(chunk->x + 1, chunk->z);
         
-        free(neighborChunk->dispList);
-        build_chunk_display_list(neighborChunk);
+        rebuild_chunk_display_list(neighborChunk);
     }
     if (blockZ == 0)
     {
         struct Chunk *neighborChunk = world_get_chunk(chunk->x, chunk->z - 1);
         
-        free(neighborChunk->dispList);
-        build_chunk_display_list(neighborChunk);
+        rebuild_chunk_display_list(neighborChunk);
     }
     else if (blockZ == CHUNK_WIDTH - 1)
     {
         struct Chunk *neighborChunk = world_get_chunk(chunk->x, chunk->z + 1);
         
-        free(neighborChunk->dispList);
-        build_chunk_display_list(neighborChunk);
+        rebuild_chunk_display_list(neighborChunk);
     }
     
     add_block_modification(chunk, blockX, blockY, blockZ, type);
@@ -457,12 +467,16 @@ void world_set_block(int x, int y, int z, int type)
  *    /z+
  *   V
  */
+ 
+#define FACE_IS_TRANSPARENT(f) ((f) == TILE_LEAVES)
 
 static void add_face(int x, int y, int z, int direction, int block)
 {
     struct Face face;
+    struct FaceList *list;
     
     face.tile = blockTiles[block][direction];
+    list = FACE_IS_TRANSPARENT(face.tile) ? &transparentFaces : &opaqueFaces;
     switch (direction)
     {
         case DIR_X_FRONT:  //drawn clockwise looking x-
@@ -516,22 +530,26 @@ static void add_face(int x, int y, int z, int direction, int block)
         face.vertexes[i].y += y;
         face.vertexes[i].z += z;
     }
-    if (facesListCount == facesListCapacity)
+    if (list->count == list->capacity)
     {
-        facesListCapacity += 32;
-        facesList = realloc(facesList, facesListCapacity * sizeof(struct Face));
+        list->capacity += 32;
+        list->faces = realloc(list->faces, list->capacity * sizeof(struct Face));
     }
-    facesList[facesListCount] = face;
-    facesListCount++;
+    list->faces[list->count] = face;
+    list->count++;
 }
 
 static void build_exposed_faces_list(struct Chunk *chunk)
 {
-    facesList = NULL;
-    facesListCount = 0;
-    facesListCapacity = 0;
     struct Chunk *prevChunkX = world_get_chunk(chunk->x - 1, chunk->z);
     struct Chunk *prevChunkZ = world_get_chunk(chunk->x, chunk->z - 1);
+    
+    opaqueFaces.faces = NULL;
+    opaqueFaces.count = 0;
+    opaqueFaces.capacity = 0;
+    transparentFaces.faces = NULL;
+    transparentFaces.count = 0;
+    transparentFaces.capacity = 0;
     
     //For each block, add the face of the block preceding it in the x, y, and z directions, if visible
     for (int x = 0; x < CHUNK_WIDTH; x++)
@@ -562,6 +580,27 @@ static void build_exposed_faces_list(struct Chunk *chunk)
                     if (BLOCK_IS_SOLID(prevBlockZ))
                         add_face(x, y, z, DIR_Z_FRONT, prevBlockZ);
                 }
+                
+                /*
+                if (BLOCK_IS_SOLID(currBlock))
+                {
+                    if (!BLOCK_IS_SOLID(prevBlockX))
+                        add_face(x, y, z, DIR_X_BACK, currBlock);
+                    if (y > 0 && !BLOCK_IS_SOLID(chunk->blocks[x][y - 1][z]))
+                        add_face(x, y, z, DIR_Y_BACK, currBlock);
+                    if (!BLOCK_IS_SOLID(prevBlockZ))
+                        add_face(x, y, z, DIR_Z_BACK, currBlock);
+                }
+                else
+                {
+                    if (BLOCK_IS_SOLID(prevBlockX))
+                        add_face(x, y, z, DIR_X_FRONT, prevBlockX);
+                    if (y > 0 && BLOCK_IS_SOLID(chunk->blocks[x][y - 1][z]))
+                        add_face(x, y, z, DIR_Y_FRONT, chunk->blocks[x][y - 1][z]);
+                    if (BLOCK_IS_SOLID(prevBlockZ))
+                        add_face(x, y, z, DIR_Z_FRONT, prevBlockZ);
+                }
+                */
             }
         }
     }
@@ -574,7 +613,14 @@ static inline int round_up(int number, int multiple)
 
 static void build_chunk_display_list(struct Chunk *chunk)
 {
-    size_t listSize;
+    const u16 texCoords[4][2] = {
+        {0, 0},
+        {1, 0},
+        {1, 1},
+        {0, 1}
+    };
+    size_t opaqueDispListSize;
+    size_t transparentDispListSize;
     int x = chunk->x * CHUNK_WIDTH;
     int z = chunk->z * CHUNK_WIDTH;
     
@@ -584,26 +630,111 @@ static void build_chunk_display_list(struct Chunk *chunk)
     //Each face is a quad with 4 vertexes.
     //Each vertex takes up three u16 for the position coordinate, one u8 for the color index, and two u16 for the texture coordinate.
     //Because of the write gathering pipe, an extra 63 bytes are needed.
-    listSize = 3 + facesListCount * 4 * (3 * sizeof(s16) + sizeof(u8) + 2 * sizeof(u16)) + 63;
+    opaqueDispListSize = 3 + opaqueFaces.count * 4 * (3 * sizeof(s16) + sizeof(u8) + 2 * sizeof(u16)) + 63;
+    transparentDispListSize = 3 + transparentFaces.count * 4 * (3 * sizeof(s16) + sizeof(u8) + 2 * sizeof(u16)) + 63;
     //The list size also must be a multiple of 32, so round up to the next multiple of 32.
-    listSize = round_up(listSize, 32);
+    opaqueDispListSize = round_up(opaqueDispListSize, 32);
+    transparentDispListSize = round_up(transparentDispListSize, 32);
     
-    chunk->dispList = memalign(32, listSize);
+    chunk->opaqueDispList = memalign(32, opaqueDispListSize);
+    chunk->transparentDispList = memalign(32, transparentDispListSize);
+    
     //Remove this block of memory from the CPU's cache because the write gather pipe is used to write the commands
-    DCInvalidateRange(chunk->dispList, listSize);
-    
-    GX_BeginDispList(chunk->dispList, listSize); 
-    
-    GX_Begin(GX_QUADS, GX_VTXFMT1, 4 * facesListCount);
-    for (int i = 0; i < facesListCount; i++)
+    DCInvalidateRange(chunk->opaqueDispList, opaqueDispListSize);
+    //Create opaque display list
+    GX_BeginDispList(chunk->opaqueDispList, opaqueDispListSize); 
+    GX_Begin(GX_QUADS, GX_VTXFMT1, 4 * opaqueFaces.count);
+    for (int i = 0; i < opaqueFaces.count; i++)
     {
-        struct Face *face = &facesList[i];
-        u16 texCoords[4][2] = {
-            {0, 0},
-            {1, 0},
-            {1, 1},
-            {0, 1}
-        };
+        struct Face *face = &opaqueFaces.faces[i];
+        
+        for (int j = 0; j < 4; j++)
+        {
+            struct Vertex *vertex = &face->vertexes[j];
+            
+            GX_Position3s16(x + vertex->x, vertex->y, z + vertex->z);
+            GX_Color1x8(face->light);
+            GX_TexCoord2u16(texCoords[j][0] + face->tile, texCoords[j][1]);
+        }
+    }
+    GX_End();
+    chunk->opaqueDispListSize = GX_EndDispList();
+    assert(chunk->opaqueDispListSize != 0);
+    
+    //Remove this block of memory from the CPU's cache because the write gather pipe is used to write the commands
+    DCInvalidateRange(chunk->transparentDispList, transparentDispListSize);
+    //Create transparent display list
+    GX_BeginDispList(chunk->transparentDispList, transparentDispListSize); 
+    GX_Begin(GX_QUADS, GX_VTXFMT1, 4 * transparentFaces.count);
+    for (int i = 0; i < transparentFaces.count; i++)
+    {
+        struct Face *face = &transparentFaces.faces[i];
+        
+        for (int j = 0; j < 4; j++)
+        {
+            struct Vertex *vertex = &face->vertexes[j];
+            
+            GX_Position3s16(x + vertex->x, vertex->y, z + vertex->z);
+            GX_Color1x8(face->light);
+            GX_TexCoord2u16(texCoords[j][0] + face->tile, texCoords[j][1]);
+        }
+    }
+    GX_End();
+    chunk->transparentDispListSize = GX_EndDispList();
+    assert(chunk->transparentDispListSize != 0);
+    
+    free(opaqueFaces.faces);
+    free(transparentFaces.faces);
+}
+
+/*
+static void build_chunk_display_list(struct Chunk *chunk)
+{
+    const u16 texCoords[4][2] = {
+        {0, 0},
+        {1, 0},
+        {1, 1},
+        {0, 1}
+    };
+    size_t dispListSize;
+    int x = chunk->x * CHUNK_WIDTH;
+    int z = chunk->z * CHUNK_WIDTH;
+    int facesCount;
+    
+    build_exposed_faces_list(chunk);
+    facesCount = opaqueFaces.count + transparentFaces.count;
+    
+    //The GX_DRAW_QUADS command takes up 3 bytes.
+    //Each face is a quad with 4 vertexes.
+    //Each vertex takes up three u16 for the position coordinate, one u8 for the color index, and two u16 for the texture coordinate.
+    //Because of the write gathering pipe, an extra 63 bytes are needed.
+    dispListSize = 3 + facesCount * 4 * (3 * sizeof(s16) + sizeof(u8) + 2 * sizeof(u16)) + 63;
+    //The list size also must be a multiple of 32, so round up to the next multiple of 32.
+    dispListSize = round_up(dispListSize, 32);
+    
+    chunk->dispList = memalign(32, dispListSize);
+    //Remove this block of memory from the CPU's cache because the write gather pipe is used to write the commands
+    DCInvalidateRange(chunk->dispList, dispListSize);
+    
+    GX_BeginDispList(chunk->dispList, dispListSize); 
+    
+    GX_Begin(GX_QUADS, GX_VTXFMT1, 4 * facesCount);
+    for (int i = 0; i < opaqueFaces.count; i++)
+    {
+        struct Face *face = &opaqueFaces.faces[i];
+        
+        for (int j = 0; j < 4; j++)
+        {
+            struct Vertex *vertex = &face->vertexes[j];
+            
+            GX_Position3s16(x + vertex->x, vertex->y, z + vertex->z);
+            GX_Color1x8(face->light);
+            GX_TexCoord2u16(texCoords[j][0] + face->tile, texCoords[j][1]);
+        }
+    }
+    for (int i = 0; i < transparentFaces.count; i++)
+    {
+        struct Face *face = &transparentFaces.faces[i];
         
         for (int j = 0; j < 4; j++)
         {
@@ -618,8 +749,10 @@ static void build_chunk_display_list(struct Chunk *chunk)
     
     chunk->dispListSize = GX_EndDispList();
     assert(chunk->dispListSize != 0);
-    free(facesList);
+    free(opaqueFaces.faces);
+    free(transparentFaces.faces);
 }
+*/
 
 u8 lightLevels[16 * 3] ATTRIBUTE_ALIGN(32) = {
     0,   0,   0,
@@ -666,12 +799,23 @@ void world_render_chunks_at(float x, float z)
         {
             struct Chunk *chunk = world_get_chunk(chunkX + i, chunkZ + j);
             
-            if (chunk->dispList == NULL)
+            if (chunk->opaqueDispList == NULL)
                 build_chunk_display_list(chunk);
-            GX_CallDispList(chunk->dispList, chunk->dispListSize);
+            GX_CallDispList(chunk->opaqueDispList, chunk->opaqueDispListSize);
         }
     }
-    
+    GX_SetCullMode(GX_CULL_NONE);
+    for (int i = -CHUNK_RENDER_RANGE / 2; i <= CHUNK_RENDER_RANGE / 2; i++)
+    {
+        for (int j = -CHUNK_RENDER_RANGE / 2; j <= CHUNK_RENDER_RANGE / 2; j++)
+        {
+            struct Chunk *chunk = world_get_chunk(chunkX + i, chunkZ + j);
+            
+            assert(chunk->transparentDispList != NULL);
+            GX_CallDispList(chunk->transparentDispList, chunk->transparentDispListSize);
+        }
+    }
+    GX_SetCullMode(GX_CULL_BACK);
     GX_SetNumTevStages(1);
 }
 

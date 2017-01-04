@@ -19,6 +19,7 @@ enum
 };
 
 #define BLOCK_IS_SOLID(b)   ((b) != BLOCK_AIR && (b) != BLOCK_WATER)
+#define BLOCK_IS_TRANSPARENT(b) ((b) == BLOCK_AIR || (b) == BLOCK_WATER || (b) == BLOCK_LEAVES)
 
 struct Chunk
 {
@@ -26,8 +27,10 @@ struct Chunk
     int modificationIndex;
     int x;
     int z;
-    void *dispList;
-    size_t dispListSize;
+    void *opaqueDispList;
+    size_t opaqueDispListSize;
+    void *transparentDispList;
+    size_t transparentDispListSize;
     u8 blocks[CHUNK_WIDTH][CHUNK_HEIGHT][CHUNK_WIDTH];  //blocks[x][y][z]
 };
 
