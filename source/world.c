@@ -13,63 +13,6 @@
 #define TEX_BLOCK_WIDTH 16
 #define TEX_BLOCK_HEIGHT 16
 
-enum
-{
-    TILE_STONE,
-    TILE_SAND,
-    TILE_DIRT,
-    TILE_GRASS_SIDE,
-    TILE_GRASS,
-    TILE_WOOD,
-    TILE_TREE_SIDE,
-    TILE_TREE_TOP,
-    TILE_LEAVES,
-    TILE_GC_FRONT,
-    TILE_GC_TOP,
-    TILE_GC_SIDE,
-    TILE_GC_BACK,
-    TILE_GC_BOTTOM,
-    NUM_TILES,
-};
-
-enum
-{
-    DIR_X_FRONT,
-    DIR_X_BACK,
-    DIR_Y_FRONT,
-    DIR_Y_BACK,
-    DIR_Z_FRONT,
-    DIR_Z_BACK,
-};
-
-static const u8 blockTiles[][6] =
-{
-    [BLOCK_STONE]     = {TILE_STONE,      TILE_STONE,      TILE_STONE,    TILE_STONE,     TILE_STONE,      TILE_STONE},
-    [BLOCK_SAND]      = {TILE_SAND,       TILE_SAND,       TILE_SAND,     TILE_SAND,      TILE_SAND,       TILE_SAND},
-    [BLOCK_DIRT]      = {TILE_DIRT,       TILE_DIRT,       TILE_DIRT,     TILE_DIRT,      TILE_DIRT,       TILE_DIRT},
-    [BLOCK_GRASS]     = {TILE_GRASS_SIDE, TILE_GRASS_SIDE, TILE_GRASS,    TILE_DIRT,      TILE_GRASS_SIDE, TILE_GRASS_SIDE},
-    [BLOCK_WOOD]      = {TILE_WOOD,       TILE_WOOD,       TILE_WOOD,     TILE_WOOD,      TILE_WOOD,       TILE_WOOD},
-    [BLOCK_TREE]      = {TILE_TREE_SIDE,  TILE_TREE_SIDE,  TILE_TREE_TOP, TILE_TREE_TOP,  TILE_TREE_SIDE,  TILE_TREE_SIDE},
-    [BLOCK_LEAVES]    = {TILE_LEAVES,     TILE_LEAVES,     TILE_LEAVES,   TILE_LEAVES,    TILE_LEAVES,     TILE_LEAVES},
-    [BLOCK_GAMECUBE]  = {TILE_GC_SIDE,    TILE_GC_SIDE,    TILE_GC_TOP,   TILE_GC_BOTTOM, TILE_GC_FRONT,   TILE_GC_BACK}
-};
-
-struct Vertex
-{
-    s16 x, y, z;
-};
-
-struct Face
-{
-    int tile;
-    int light;
-    struct Vertex vertexes[4];
-};
-
-static struct Face *facesList;
-static int facesListCount;
-static int facesListCapacity;
-
 static TPLFile blocksTPL;
 static GXTexObj blocksTexture;
 
@@ -458,64 +401,110 @@ void world_set_block(int x, int y, int z, int type)
  *   V
  */
 
+ enum
+{
+    TILE_STONE,
+    TILE_SAND,
+    TILE_DIRT,
+    TILE_GRASS_SIDE,
+    TILE_GRASS,
+    TILE_WOOD,
+    TILE_TREE_SIDE,
+    TILE_TREE_TOP,
+    TILE_LEAVES,
+    TILE_GC_FRONT,
+    TILE_GC_TOP,
+    TILE_GC_SIDE,
+    TILE_GC_BACK,
+    TILE_GC_BOTTOM,
+    NUM_TILES,
+};
+
+enum
+{
+    DIR_X_FRONT,
+    DIR_X_BACK,
+    DIR_Y_FRONT,
+    DIR_Y_BACK,
+    DIR_Z_FRONT,
+    DIR_Z_BACK,
+};
+
+static const u8 blockTiles[][6] =
+{
+    [BLOCK_STONE]     = {TILE_STONE,      TILE_STONE,      TILE_STONE,    TILE_STONE,     TILE_STONE,      TILE_STONE},
+    [BLOCK_SAND]      = {TILE_SAND,       TILE_SAND,       TILE_SAND,     TILE_SAND,      TILE_SAND,       TILE_SAND},
+    [BLOCK_DIRT]      = {TILE_DIRT,       TILE_DIRT,       TILE_DIRT,     TILE_DIRT,      TILE_DIRT,       TILE_DIRT},
+    [BLOCK_GRASS]     = {TILE_GRASS_SIDE, TILE_GRASS_SIDE, TILE_GRASS,    TILE_DIRT,      TILE_GRASS_SIDE, TILE_GRASS_SIDE},
+    [BLOCK_WOOD]      = {TILE_WOOD,       TILE_WOOD,       TILE_WOOD,     TILE_WOOD,      TILE_WOOD,       TILE_WOOD},
+    [BLOCK_TREE]      = {TILE_TREE_SIDE,  TILE_TREE_SIDE,  TILE_TREE_TOP, TILE_TREE_TOP,  TILE_TREE_SIDE,  TILE_TREE_SIDE},
+    [BLOCK_LEAVES]    = {TILE_LEAVES,     TILE_LEAVES,     TILE_LEAVES,   TILE_LEAVES,    TILE_LEAVES,     TILE_LEAVES},
+    [BLOCK_GAMECUBE]  = {TILE_GC_SIDE,    TILE_GC_SIDE,    TILE_GC_TOP,   TILE_GC_BOTTOM, TILE_GC_FRONT,   TILE_GC_BACK}
+};
+
+static const u8 cubeFaces[6][4][3] = 
+{
+    [DIR_X_FRONT] = {{0, 1, 1}, {0, 1, 0}, {0, 0, 0}, {0, 0, 1}},  //drawn clockwise looking x-
+    [DIR_X_BACK]  = {{0, 1, 0}, {0, 1, 1}, {0, 0, 1}, {0, 0, 0}},  //drawn clockwise looking x+
+    [DIR_Y_FRONT] = {{0, 0, 0}, {1, 0, 0}, {1, 0, 1}, {0, 0, 1}},  //drawn clockwise looking y-
+    [DIR_Y_BACK]  = {{0, 0, 0}, {0, 0, 1}, {1, 0, 1}, {1, 0, 0}},  //drawn clockwise looking y+
+    [DIR_Z_FRONT] = {{0, 1, 0}, {1, 1, 0}, {1, 0, 0}, {0, 0, 0}},  //drawn clockwise looking z-
+    [DIR_Z_BACK]  = {{1, 1, 0}, {0, 1, 0}, {0, 0, 0}, {1, 0, 0}},  //drawn clockwise looking z+
+};
+
+struct Vertex
+{
+    s16 x, y, z;
+};
+
+struct Face
+{
+    struct Vertex position;
+    u8 direction;
+    u8 tile;
+    u8 light;
+};
+
+static struct Face *facesList;
+static int facesListCount;
+static int facesListCapacity;
+
 static void add_face(int x, int y, int z, int direction, int block)
 {
     struct Face face;
     
+    face.position.x = x;
+    face.position.y = y;
+    face.position.z = z;
+    face.direction = direction;
     face.tile = blockTiles[block][direction];
+    
+    //compute lighting
     switch (direction)
     {
-        case DIR_X_FRONT:  //drawn clockwise looking x-
-            face.vertexes[0] = (struct Vertex){0, 1, 1};
-            face.vertexes[1] = (struct Vertex){0, 1, 0};
-            face.vertexes[2] = (struct Vertex){0, 0, 0};
-            face.vertexes[3] = (struct Vertex){0, 0, 1};
+        case DIR_X_FRONT:
             face.light = 13;
             break;
-        case DIR_X_BACK:  //drawn clockwise looking x+
-            face.vertexes[0] = (struct Vertex){0, 1, 0};
-            face.vertexes[1] = (struct Vertex){0, 1, 1};
-            face.vertexes[2] = (struct Vertex){0, 0, 1};
-            face.vertexes[3] = (struct Vertex){0, 0, 0};
+        case DIR_X_BACK:
             face.light = 9;
             break;
-        case DIR_Y_FRONT:  //drawn clockwise looking y-
-            face.vertexes[0] = (struct Vertex){0, 0, 0};
-            face.vertexes[1] = (struct Vertex){1, 0, 0};
-            face.vertexes[2] = (struct Vertex){1, 0, 1};
-            face.vertexes[3] = (struct Vertex){0, 0, 1};
+        case DIR_Y_FRONT:
             face.light = 15;
             break;
-        case DIR_Y_BACK:  //drawn clockwise looking y+
-            face.vertexes[0] = (struct Vertex){0, 0, 0};
-            face.vertexes[1] = (struct Vertex){0, 0, 1};
-            face.vertexes[2] = (struct Vertex){1, 0, 1};
-            face.vertexes[3] = (struct Vertex){1, 0, 0};
+        case DIR_Y_BACK:
             face.light = 5;
             break;
-        case DIR_Z_FRONT: //drawn clockwise looking z-
-            face.vertexes[0] = (struct Vertex){0, 1, 0};
-            face.vertexes[1] = (struct Vertex){1, 1, 0};
-            face.vertexes[2] = (struct Vertex){1, 0, 0};
-            face.vertexes[3] = (struct Vertex){0, 0, 0};
+        case DIR_Z_FRONT:
             face.light = 11;
             break;
-        case DIR_Z_BACK:  //drawn clockwise looking z+
-            face.vertexes[0] = (struct Vertex){1, 1, 0};
-            face.vertexes[1] = (struct Vertex){0, 1, 0};
-            face.vertexes[2] = (struct Vertex){0, 0, 0};
-            face.vertexes[3] = (struct Vertex){1, 0, 0};
+        case DIR_Z_BACK:
             face.light = 7;
             break;
         default:
             assert(false);  //bad direction parameter
     }
-    for (int i = 0; i < 4; i++)
-    {
-        face.vertexes[i].x += x;
-        face.vertexes[i].y += y;
-        face.vertexes[i].z += z;
-    }
+    
+    //add it to the list
     if (facesListCount == facesListCapacity)
     {
         facesListCapacity += 32;
@@ -574,6 +563,13 @@ static inline int round_up(int number, int multiple)
 
 static void build_chunk_display_list(struct Chunk *chunk)
 {
+    const u16 tileTexCoords[4][2] =
+    {
+        {0, 0},
+        {1, 0},
+        {1, 1},
+        {0, 1}
+    };
     size_t listSize;
     int x = chunk->x * CHUNK_WIDTH;
     int z = chunk->z * CHUNK_WIDTH;
@@ -598,20 +594,15 @@ static void build_chunk_display_list(struct Chunk *chunk)
     for (int i = 0; i < facesListCount; i++)
     {
         struct Face *face = &facesList[i];
-        u16 texCoords[4][2] = {
-            {0, 0},
-            {1, 0},
-            {1, 1},
-            {0, 1}
-        };
         
+        //add vertices for the face
         for (int j = 0; j < 4; j++)
         {
-            struct Vertex *vertex = &face->vertexes[j];
-            
-            GX_Position3s16(x + vertex->x, vertex->y, z + vertex->z);
+            GX_Position3s16(face->position.x + cubeFaces[face->direction][j][0] + x,
+                            face->position.y + cubeFaces[face->direction][j][1],
+                            face->position.z + cubeFaces[face->direction][j][2] + z);
             GX_Color1x8(face->light);
-            GX_TexCoord2u16(texCoords[j][0] + face->tile, texCoords[j][1]);
+            GX_TexCoord2u16(face->tile + tileTexCoords[j][0], tileTexCoords[j][1]);
         }
     }
     GX_End();
@@ -621,7 +612,7 @@ static void build_chunk_display_list(struct Chunk *chunk)
     free(facesList);
 }
 
-u8 lightLevels[16 * 3] ATTRIBUTE_ALIGN(32) = {
+static u8 lightLevels[16 * 3] ATTRIBUTE_ALIGN(32) = {
     0,   0,   0,
     16,  16,  16,
     32,  32,  32,
