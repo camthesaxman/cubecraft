@@ -465,19 +465,33 @@ static void main_menu_init(void)
 
 static void title_screen_main(void)
 {
-    if (gControllerPressedKeys & PAD_BUTTON_START)
-        main_menu_init();
+    if (menu_msgbox_is_open())
+    {
+        menu_msgbox_process_input();
+    }
+    else
+    {
+        if (gControllerPressedKeys & PAD_BUTTON_START)
+            main_menu_init();
+    }
 }
 
 static void title_screen_draw(void)
 {
     draw_title_background();
-    if (!(pressStartBlinkCounter & 0x20))
+    if (menu_msgbox_is_open())
     {
-        text_set_font_size(16, 32);
-        text_draw_string(gDisplayWidth / 2, 300, TEXT_HCENTER, "Press Start");
+        menu_draw();
     }
-    pressStartBlinkCounter++;
+    else
+    {
+        if (!(pressStartBlinkCounter & 0x20))
+        {
+            text_set_font_size(16, 32);
+            text_draw_string(gDisplayWidth / 2, 300, TEXT_HCENTER, "Press Start");
+        }
+        pressStartBlinkCounter++;
+    }
 }
 
 static void start_title_screen(void)
@@ -489,11 +503,14 @@ static void start_title_screen(void)
 }
 
 void title_screen_init(void)
-{    
+{
     //initialize background world
     strcpy(gSaveFile.seed, "12345");
     gSaveFile.modifiedChunks = NULL;
     gSaveFile.modifiedChunksCount = 0;
+    
+    if (file_get_error() != NULL)
+        menu_msgbox_init(file_get_error());
     world_init();
     start_title_screen();
 }

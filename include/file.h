@@ -22,6 +22,7 @@ struct SaveFile
 
 extern struct SaveFile gSaveFile;
 
+const char *file_get_error(void);
 void file_init(void);
 void file_log(const char *fmt, ...);
 void file_enumerate(bool (*callback)(const char *filename));

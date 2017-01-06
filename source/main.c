@@ -130,6 +130,8 @@ int main(void)
     //Initialize file system
     file_init();
     
+    file_log("hello! number = %i", 1234);
+    
     //Load textures
     title_screen_load_textures();
     world_load_textures();
