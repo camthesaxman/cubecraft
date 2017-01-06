@@ -199,9 +199,6 @@ const char *file_get_error(void)
     return errorMessage;
 }
 
-#undef PLATFORM_WII
-#define PLATFORM_GAMECUBE
-
 #if defined(PLATFORM_WII)
 
 static const char savePath[] = "/apps/cubecraft/worlds";
