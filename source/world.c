@@ -33,7 +33,8 @@ static void build_chunk_display_list(struct Chunk *chunk);
 #define SAND_LEVEL 56
 #define MAX_TREES 4
 
-static u16 random(u16 a)
+//Returns a pseudo-random number between 0 and 65535 with a 16-bit input
+static u16 prand(u16 a)
 {
     u32 val = a ^ worldSeed;
     val = val * 1103515245 >> 16;
@@ -43,7 +44,7 @@ static u16 random(u16 a)
 //Returns a random float between 0.0 and 1.0
 static float rand_hash_frac(int a, int b)
 {
-    u16 hash = random(a) ^ random(b);
+    u16 hash = prand(a) ^ prand(b);
     
     return (float)hash / 65535.0;
 }
@@ -139,9 +140,9 @@ static void generate_land(struct Chunk *chunk)
     for (int i = 0; i < MAX_TREES; i++)
     {
         //We want to keep things simple and avoid having the tree leaves overlap into neighboring chunks
-        randVal = random(randVal);
+        randVal = prand(randVal);
         x = 2 + (randVal % (CHUNK_WIDTH - 4));
-        randVal = random(randVal);
+        randVal = prand(randVal);
         z = 2 + (randVal % (CHUNK_WIDTH - 4));
         y = heightmap[x][z];
        
@@ -151,11 +152,11 @@ static void generate_land(struct Chunk *chunk)
     }
     
     //Bury one secret Gamecube in each chunk
-    randVal = random(randVal);
+    randVal = prand(randVal);
     gameCubeX = randVal % CHUNK_WIDTH;
-    randVal = random(randVal);
+    randVal = prand(randVal);
     gameCubeY = randVal;
-    randVal = random(randVal);
+    randVal = prand(randVal);
     gameCubeZ = randVal % CHUNK_WIDTH;
     gameCubeY %= heightmap[gameCubeX][gameCubeZ] - 1;
     assert(gameCubeX >= 0);
